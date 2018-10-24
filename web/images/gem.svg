@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="50px" height="60px" viewBox="0 0 50 60" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: sketchtool 51.3 (57544) - http://www.bohemiancoding.com/sketch -->
+    <title>6DCC2400-FC34-4429-A30A-9D6F209E5D46</title>
+    <desc>Created with sketchtool.</desc>
+    <defs>
+        <polygon id="path-1" points="9.8377855 0 25.513613 5.93434396 25.513613 26.065616 6.72840502 36 0 10.7804752"></polygon>
+        <filter x="-76.4%" y="-54.2%" width="252.9%" height="208.3%" filterUnits="objectBoundingBox" id="filter-2">
+            <feOffset dx="0" dy="0" in="SourceAlpha" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="6.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feComposite in="shadowBlurOuter1" in2="SourceAlpha" operator="out" result="shadowBlurOuter1"></feComposite>
+            <feColorMatrix values="0 0 0 0 1   0 0 0 0 0.498441446   0 0 0 0 0.758164957  0 0 0 1 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Home_1" transform="translate(-1098.000000, -2628.000000)">
+            <g id="Group-16" transform="translate(218.000000, 1963.000000)">
+                <g id="gem" transform="translate(892.000000, 677.000000)">
+                    <g id="Group-10">
+                        <g id="Path-6">
+                            <use fill="black" fill-opacity="1" filter="url(#filter-2)" xlink:href="#path-1"></use>
+                            <path stroke="#F699FF" stroke-width="2" d="M10.1187567,1.17562428 L1.10710059,11.0508076 L7.37092496,34.5289831 L24.513613,25.4632307 L24.513613,6.62503539 L10.1187567,1.17562428 Z" stroke-linejoin="square" fill="#FF4FDD" fill-rule="evenodd"></path>
+                        </g>
+                        <polygon id="Path-7" fill="#FF82E7" points="8.0089949 33.0693657 11.9220539 20.9612584 9.83801734 14.0098652 2.20203425 11.2761513"></polygon>
+                        <polygon id="Path-8" fill="#FFA4D5" points="9.84058067 14.0098358 13.5791003 9.86419492 10.4240964 2.13633326 2.18193707 11.272001"></polygon>
+                        <polygon id="Path-9" fill="#FFBBE0" points="13.5791391 9.8635379 10.393884 2.17547605 23.5850974 7.30107353 20.5974972 13.7070232"></polygon>
+                        <polygon id="Path-10" fill="#E255C7" points="23.5061854 24.9326396 17.8571882 20.2570586 11.9282292 20.9563769 8.00675256 33.0592406"></polygon>
+                        <polygon id="Path-11" fill="#F653D7" points="20.5372441 13.6340587 17.9136978 20.292176 23.5267246 24.8927107 23.5267246 7.35713447"></polygon>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

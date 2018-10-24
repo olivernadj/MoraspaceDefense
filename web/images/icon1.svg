@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="50px" height="64px" viewBox="0 0 50 64" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: sketchtool 51.3 (57544) - http://www.bohemiancoding.com/sketch -->
+    <title>DEADE47F-C072-4E70-9CF1-AE6E90D1B696</title>
+    <desc>Created with sketchtool.</desc>
+    <defs>
+        <polygon id="path-1" points="12.8373236 0 0 21.950573 12.8373236 30 26 21.950573"></polygon>
+        <filter x="-75.0%" y="-65.0%" width="250.0%" height="230.0%" filterUnits="objectBoundingBox" id="filter-2">
+            <feOffset dx="0" dy="0" in="SourceAlpha" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="6.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feComposite in="shadowBlurOuter1" in2="SourceAlpha" operator="out" result="shadowBlurOuter1"></feComposite>
+            <feColorMatrix values="0 0 0 0 0.314369351   0 0 0 0 0.8883757   0 0 0 0 0.864881214  0 0 0 1 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+        <polygon id="path-3" points="0 25 13.0524169 32.3072345 26 25 13.0524169 42"></polygon>
+        <filter x="-75.0%" y="-114.7%" width="250.0%" height="329.4%" filterUnits="objectBoundingBox" id="filter-4">
+            <feOffset dx="0" dy="0" in="SourceAlpha" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="6.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feComposite in="shadowBlurOuter1" in2="SourceAlpha" operator="out" result="shadowBlurOuter1"></feComposite>
+            <feColorMatrix values="0 0 0 0 0.314369351   0 0 0 0 0.8883757   0 0 0 0 0.864881214  0 0 0 1 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Home_1" transform="translate(-1156.000000, -341.000000)">
+            <g id="Group-8" transform="translate(1168.000000, 352.000000)">
+                <g id="Path-4">
+                    <use fill="black" fill-opacity="1" filter="url(#filter-2)" xlink:href="#path-1"></use>
+                    <path stroke="#50E3CE" stroke-width="2" d="M12.8480909,1.96243908 L1.35270152,21.6184352 L12.8439119,28.8238046 L24.6325517,21.614648 L12.8480909,1.96243908 Z" stroke-linejoin="square" fill="#20C4B5" fill-rule="evenodd"></path>
+                </g>
+                <g id="Path-5">
+                    <use fill="black" fill-opacity="1" filter="url(#filter-4)" xlink:href="#path-3"></use>
+                    <path stroke="#50E3CE" stroke-width="2" d="M3.75449787,28.2479539 L13.049214,40.3537711 L22.2615004,28.2581647 L13.0543927,33.4543852 L3.75449787,28.2479539 Z" stroke-linejoin="square" fill="#20C4B5" fill-rule="evenodd"></path>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

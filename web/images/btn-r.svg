@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="310px" height="113px" viewBox="0 0 310 113" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: sketchtool 51.3 (57544) - http://www.bohemiancoding.com/sketch -->
+    <title>5940879D-A800-4DD0-B80B-97B0DE3565BC</title>
+    <desc>Created with sketchtool.</desc>
+    <defs>
+        <polygon id="path-1" points="40.29 67.3798 49.84 71.9298 219.84 71.9298 229.38 67.3798 259.62 67.3798 269.17 57.8398 269.17 15.5998 259.62 6.0498 229.38 6.0498 219.83 0.4998 49.83 0.4998 40.29 6.0498 10.05 6.0498 0.5 15.5998 0.5 57.8398 10.05 67.3798"></polygon>
+        <filter x="-11.4%" y="-42.7%" width="122.7%" height="185.4%" filterUnits="objectBoundingBox" id="filter-2">
+            <feMorphology radius="3" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="0" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="8.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feComposite in="shadowBlurOuter1" in2="SourceAlpha" operator="out" result="shadowBlurOuter1"></feComposite>
+            <feColorMatrix values="0 0 0 0 0.816203773   0 0 0 0 0.00751322834   0 0 0 0 0.106696017  0 0 0 1 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Home_1" transform="translate(-244.000000, -2738.000000)">
+            <g id="Group-16" transform="translate(218.000000, 1963.000000)">
+                <g id="Group-6" transform="translate(32.000000, 560.000000)">
+                    <g id="Group" transform="translate(14.000000, 235.000000)">
+                        <g id="Group-7-Copy">
+                            <g id="Group-4">
+                                <g id="Stroke-2">
+                                    <use fill="black" fill-opacity="1" filter="url(#filter-2)" xlink:href="#path-1"></use>
+                                    <path stroke="#FF96A3" stroke-width="2" d="M40.0639525,68.3798 L9.63609326,68.3798 L-0.5,58.2543205 L-0.5,15.1855864 L9.63578644,5.0498 L40.0202806,5.0498 L49.5602806,-0.5002 L220.099475,-0.5002 L229.649475,5.0498 L260.034214,5.0498 L270.17,15.1855864 L270.17,58.2543205 L260.033907,68.3798 L229.606261,68.3798 L220.066261,72.9298 L49.6139525,72.9298 L40.0639525,68.3798 Z" fill="#FF3D54" fill-rule="evenodd"></path>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>
