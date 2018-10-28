@@ -24,6 +24,7 @@ library NameFilter {
       // We know that we only access the array in bounds, so we can avoid the check.
       // 0x20 needs to be added to an array because the first slot contains the
       // array length.
+      // https://solidity.readthedocs.io/en/v0.4.25/assembly.html
       assembly {
         c := mload(add(add(_name, 0x20), mul(i, 0x20)))
       }
@@ -41,7 +42,7 @@ library NameFilter {
     }
     require(_hasAlphaChar == true, "Name cannot be only numbers");
     bytes32 _ret;
-    assembly {
+    assembly { // https://ethereum.stackexchange.com/questions/9142/how-to-convert-a-string-to-bytes32
         _ret := mload(add(_name, 32))
     }
     return (_ret);
