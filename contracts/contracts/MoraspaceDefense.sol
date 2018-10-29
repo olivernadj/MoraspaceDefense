@@ -48,17 +48,25 @@ contract MoraspaceDefense is Owned {
   uint8 public discounts;
   mapping (uint8 => DataSets.Launchpad) public launchpad;
   uint8 public launchpads;
+  mapping (uint16 => DataSets.Hero) public hero;
   mapping (uint16 => DataSets.Round) public round;
   uint16 public rounds;
   mapping (uint256 => DataSets.Player) public player;
   address[] public playerDict;
-
 
   /**
    * @dev allows things happen before the new round started
    */
   modifier onlyBeforeARound {
     require(round[rounds].over == true, "Sorry the round has begun!");
+    _;
+  }
+
+  /**
+   * @dev allows things happen before the new round started
+   */
+  modifier beforeNotTooLate {
+    require(round[rounds].mayFinish < now, "Sorry it is too late!");
     _;
   }
 
@@ -88,10 +96,10 @@ contract MoraspaceDefense is Owned {
   constructor() public {
     round[0].over       = true;
     rounds              = 0;
-    launchpad[1]        = DataSets.Launchpad(100, 0);
-    launchpad[2]        = DataSets.Launchpad(100, 0);
-    launchpad[3]        = DataSets.Launchpad(100, 0);
-    launchpad[4]        = DataSets.Launchpad(100, 0);
+    launchpad[1]        = DataSets.Launchpad(100);
+    launchpad[2]        = DataSets.Launchpad(100);
+    launchpad[3]        = DataSets.Launchpad(100);
+    launchpad[4]        = DataSets.Launchpad(100);
     launchpads          = 4;
     discount[1]         = DataSets.Discount(true, 604800, 0, 800000000000000, 0);
     discounts           = 1;
@@ -130,11 +138,11 @@ contract MoraspaceDefense is Owned {
     require(_accuracy <= 100, "Maxumum accuracy is 100!");
     require(!(_discount > 0 && (_discount > discounts || !discount[_discount].valid)),
       "The linked discount must exists and need to be valid");
-    rocketClass[_i].accuracy = _accuracy;
-    rocketClass[_i].merit = _merit;
+    rocketClass[_i].accuracy  = _accuracy;
+    rocketClass[_i].merit     = _merit;
     rocketClass[_i].knockback = _knockback;
-    rocketClass[_i].cost = _cost;
-    rocketClass[_i].discount = _discount;
+    rocketClass[_i].cost      = _cost;
+    rocketClass[_i].discount  = _discount;
     if (_accuracy == 0) rocketClasses.sub(1);
     if (_i == rocketClasses + 1) rocketClasses.add(1);
   }
@@ -149,11 +157,12 @@ contract MoraspaceDefense is Owned {
   ) external onlyOwner() onlyBeforeARound() {
     require(_i <= discounts + 1, "Index can not be higher with more than one!");
     require(!(_valid == false && _i != discounts - 1), "You can remove only the last item!");
-    discount[_i].valid = _valid;
+    require(!(_nextDiscount > 0 && !discount[_nextDiscount].valid), "Invalid next discount!");
+    discount[_i].valid    = _valid;
     discount[_i].duration = _duration;
-    discount[_i].qty = _qty;
-    discount[_i].cost = _cost;
-    discount[_i].next = _nextDiscount;
+    discount[_i].qty      = _qty;
+    discount[_i].cost     = _cost;
+    discount[_i].next     = _nextDiscount;
     if (_valid == false) discounts.sub(1);
     if (_i == discounts + 1) discounts.add(1);
   }
@@ -167,18 +176,17 @@ contract MoraspaceDefense is Owned {
   ) external onlyOwner() onlyBeforeARound() {
     require(_hiro + _bounty + _next + _partners + _moraspace == 100,
       "O.o The sum of pie char should be around 100!");
-    prizeDist.hiro = _hiro;
-    prizeDist.bounty = _bounty;
-    prizeDist.next = _next;
-    prizeDist.partners = _partners;
+    prizeDist.hiro      = _hiro;
+    prizeDist.bounty    = _bounty;
+    prizeDist.next      = _next;
+    prizeDist.partners  = _partners;
     prizeDist.moraspace = _moraspace;
   }
 
   /**
-   * @dev sets the prize or increments is
+   * @dev sets the prize or increments it
    */
-  function potUp() payable external {
-    require(msg.value > 0, "Nothing to deposit!");
+  function () external payable {
     pot.add(msg.value);
   }
 
@@ -204,17 +212,16 @@ contract MoraspaceDefense is Owned {
       rocketSupply[i] = rocketClass[i];
     }
     ++rounds;
-    round[rounds].over = false;
-    round[rounds].duration = _duration;
-    round[rounds].started = now;
+    round[rounds].over      = false;
+    round[rounds].duration  = _duration;
+    round[rounds].started   = now;
     round[rounds].mayFinish = now.add(_duration);
   }
-
 
   function maintainPlayer (address _addr, uint256 _index) internal returns (uint256) {
     require(!(_index > 0 && _addr != playerDict[_index]), "Forbidden!");
     if (_index == 0) {
-      for (uint i=0; i<playerDict.length; i++) {
+      for (uint i = 0; i < playerDict.length; i++) {
         if (playerDict[i]==_addr) {
           _index = i;
           break;
@@ -224,7 +231,9 @@ contract MoraspaceDefense is Owned {
     if (_index == 0) {
       DataSets.Player memory _pm;
       _index = playerDict.push(_addr) - 1;
+      _pm.addr = _addr;
       _pm.round = rounds;
+      _pm.updated = now;
       player[_index] = _pm;
     }
     DataSets.Player storage _p = player[_index];
@@ -232,7 +241,8 @@ contract MoraspaceDefense is Owned {
     if (_p.round != rounds) {
       if (_p.merit[_r.launchpad] > 0 ) {
         _p.earnings = _p.merit[_r.launchpad].mul(_r.bounty);
-        for (i=0; i<_p.merit.length; i++) {
+        _p.updated = now;
+        for (i = 0; i < _p.merit.length; i++) {
           delete _p.merit[i];
         }
       }
@@ -240,6 +250,39 @@ contract MoraspaceDefense is Owned {
     return _index;
   }
 
+  function maintainDiscount(uint8 _rocket, uint8 _amount) internal returns (uint256) {
+    require(_rocket < rocketClasses, "Undefined rocket!");
+    DataSets.Rocket storage _r = rocketSupply[_rocket];
+    uint256 _cost = _r.cost;
+    if (_r.discount > 0) { //check if already expired
+      DataSets.Discount storage _exp = discount[_r.discount];
+      if (_exp.duration > 0 && now > round[rounds].started.add(_exp.duration)) {
+        _exp.valid = false;
+        _r.discount = _exp.next;
+      }
+    }
+    if (_r.discount > 0) {
+      DataSets.Discount storage _d = discount[_r.discount];
+      _cost = _d.cost;
+      if (_d.qty > 0) {
+        if (_d.qty <= _amount) {
+          _d.valid = false;
+          _r.discount = _d.next;
+        } else {
+          _d.qty = _d.qty.sub(_amount);
+        }
+      }
+    }
+    return _cost.mul(_amount);
+  }
+
+  /**
+   * @dev uses the previous blockhash for random generation
+   */
+  function getRandom(uint8 _maxRan) public view returns(uint8) {
+      uint256 _genNum = uint256(keccak256(abi.encodePacked(blockhash(block.number-1))));
+      return uint8(_genNum % _maxRan);
+  }
 
   /**
     * @dev launches Rockets
@@ -250,53 +293,61 @@ contract MoraspaceDefense is Owned {
     uint8 _amount,
     uint8 _launchpad,
     uint256 _player // performance improvement. Let web3 find the user index
-  ) external payable onlyLiveRound() returns(uint8 hits) {
-    uint256 pID = maintainPlayer (msg.sender, _player);
-    require(_rocket < rocketClasses, "Undefined rocket!");
+  ) external payable onlyLiveRound() beforeNotTooLate() returns(uint8 _hits) {
     require(_launchpad < launchpads, "Undefined launchpad!");
     require(_amount > 0 && _amount <= launchpad[_launchpad].size,
       "Rockets need to be more than one and maximam as mach as the launchpad can handle");
-    require(!(_player > 0 && msg.sender != playerDict[_player]), "Forbidden!");
-    DataSets.Rocket storage r    = rocketSupply[_rocket];
-    DataSets.Launchpad storage l = launchpad[_launchpad];
-    DataSets.Discount storage d  = discount[r.discount];
-    bool discountInvalidate     = false;
-
-    uint256 cost = r.cost;
-    if (r.discount > 0 && d.duration > 0 && now > round[rounds].started.add(d.duration)) {
-      d.valid = false;
-      r.discount = d.next;
+    uint256 _pIndex = maintainPlayer(msg.sender, _player);
+    uint256 _totalCost = maintainDiscount(_rocket, _amount);
+    require(_totalCost > msg.value, "Insufficient found!");
+    require(_totalCost < msg.value, "We do not accept tips!");
+    DataSets.Rocket storage _rt    = rocketSupply[_rocket];
+    DataSets.Player storage _pr    = player[_pIndex];
+    DataSets.Round storage _rd     = round[rounds];
+    pot = pot.add(_totalCost);
+    for (uint8 i = 0; i < _amount; ++i)
+      if (getRandom(100) < _rt.accuracy)
+        ++_hits;
+    if (_hits > 0) {
+      uint256 _m             = _rt.merit.mul(_hits);
+      _pr.merit[_launchpad] += _m;
+      _rd.merit[_launchpad] += _m;
+      _rd.mayFinish         += _rt.knockback.mul(_hits);
+      _rd.hiro               = msg.sender;
     }
-    if (r.discount > 0) {
-      if (d.qty > 0) {
-        cost = d.cost;
-        if (d.qty <= _amount) {
-          d.valid = false;
-          r.discount = d.next;
-        }
-      }
-    }
-    uint256 totalLaunchCost = uint256(_amount).mul(cost);
-    require(totalLaunchCost > msg.value, "Insufficient found!");
-    require(totalLaunchCost < msg.value, "We do not accept tips!");
-    pot = pot.add(totalLaunchCost);
-    for (uint8 i = 0; i < _amount; ++i) {
-      if (getRandom(100) < r.accuracy) {
-        ++hits;
-      }
-    }
-    //require(_amount >= rocketSupply[_i].maxBatchSize, "Max rocket batch size exceed!");
-    //accounts[msg.sender].eth.add(msg.value);
+    return _hits;
   }
 
-
-
-  /**
-   * @dev uses the previous blockhash for random generation
-   */
-  function getRandom(uint8 _maxRan) public view returns(uint8) {
-      uint256 _genNum = uint256(keccak256(abi.encodePacked(blockhash(block.number-1))));
-      return uint8(_genNum % _maxRan);
+  function timeTillImpact() public view returns (uint256) {
+    if (round[rounds].mayFinish < now){
+      return round[rounds].mayFinish.sub(now);
+    } else {
+      return 0;
+    }
   }
 
+  function finish(uint256 _player) public onlyOwner() onlyLiveRound() {
+    require(timeTillImpact() == 0, "Not yet!");
+    DataSets.Round storage _rd   = round[rounds];
+    _player                      = maintainPlayer(_rd.hiro, _player);
+    DataSets.Player storage _pr  = player[_player];
+    hero[rounds].addr            = _rd.hiro;
+    _rd.jackpot                  = pot.div(100).mul(prizeDist.hiro);
+    _rd.bounty                   = pot.div(_rd.merit[_rd.launchpad].sub(_pr.merit[_rd.launchpad]));
+    _rd.merit[_rd.launchpad]     = _rd.merit[_rd.launchpad].sub(_pr.merit[_rd.launchpad]);
+    _pr.merit[_rd.launchpad]     = 0;
+    _pr.earnings                 = _rd.jackpot;
+    pot                          = pot.sub(_rd.jackpot).sub(_rd.merit[_rd.launchpad].mul(_rd.bounty));
+    _rd.over                     = true;
+  }
+
+  function prizeWithdrawTo(uint256 _eth, address _to, uint256 _player) public {
+    require(_to != address(0), "Address can not be zero!");
+    _player                      = maintainPlayer(msg.sender, _player);
+    DataSets.Player storage _pr  = player[_player];
+    require(_eth > _pr.earnings, "Insufficient found!");
+    if (_eth == 0) _eth = _pr.earnings;
+    _pr.earnings = _pr.earnings.sub(_eth);
+    _to.transfer(_eth);
+  }
 }
