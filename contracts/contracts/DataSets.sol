@@ -38,8 +38,8 @@ library DataSets {
     uint256 duration; // statuc value of initial duration.
     uint256 mayFinish; // finish timestamp. can be knockback (increment) with hits before this time reached.
     uint256[] merit; // accumilated merits on each launchpads.
-    uint256 bounty; // bounty for each merits on winning launchpad.
     uint256 jackpot; // jackpot amount eg.: 50% of the pot.
+    uint256 bounty; // bounty for each merits on winning launchpad.
     address hiro; // last hero.
     uint8 launchpad; // last launchpad.
   }

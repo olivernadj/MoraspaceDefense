@@ -350,4 +350,11 @@ contract MoraspaceDefense is Owned {
     _pr.earnings = _pr.earnings.sub(_eth);
     _to.transfer(_eth);
   }
+
+  function setHiroName(uint16 _round, string _name) external payable {
+    require(msg.sender == hero[_round].addr, "The address does not match with the hiro!");
+    require(10000000000000000 == msg.value, "The payment must be 0.01ETH!");
+    pot              += 10000000000000000; // temporary goes to pot
+    hero[_round].name = _name.nameFilter();
+  }
 }
