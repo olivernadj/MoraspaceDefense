@@ -17,7 +17,7 @@ contract Owned {
   }
 
   modifier onlyOwner {
-    require(msg.sender == owner);
+    require(msg.sender == owner, "Only owner can do that!");
     _;
   }
 
@@ -26,7 +26,7 @@ contract Owned {
   }
 
   function acceptOwnership() public {
-    require(msg.sender == newOwner);
+    require(msg.sender == newOwner, "Only new owner can do that!");
     emit OwnershipTransferred(owner, newOwner);
     owner = newOwner;
     newOwner = address(0);
@@ -53,6 +53,8 @@ contract MoraspaceDefense is Owned {
   uint16 public rounds;
   mapping (uint256 => DataSets.Player) public player;
   address[] public playerDict;
+
+  event potWithdraw(uint256 indexed _eth, address indexed _to, address indexed _by);
 
   /**
    * @dev allows things happen before the new round started
@@ -187,18 +189,22 @@ contract MoraspaceDefense is Owned {
    * @dev sets the prize or increments it
    */
   function () external payable {
-    pot.add(msg.value);
+    require(msg.value > 0, "The payment must be more than 0!");
+    pot = pot.add(msg.value);
   }
 
   /**
    * @dev Withdraws from remaining pot and sends to given address
    */
   function potWithdrawTo(uint256 _eth, address _to) external onlyOwner() onlyBeforeARound() {
-    require(_eth >= 0, "The requested amount need to be explicit!");
-    require(_eth > pot, "Insufficient found!");
+    require(_eth > 0, "The requested amount need to be explicit!");
+    require(_eth <= pot, "Insufficient found!");
     require(_to != address(0), "Address can not be zero!");
+    emit potWithdraw(_eth, _to, msg.sender);
+    pot = pot.sub(_eth);
     _to.transfer(_eth);
   }
+
 
   /**
    * @dev start a new round
