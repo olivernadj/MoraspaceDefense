@@ -86,6 +86,47 @@ contract('MoraspaceDefense', function ([_, owner, newOwner, player1, player2, he
       await assertRevert(game.prepareLaunchpad(3, 0, {from: owner}), "remove none last launchpad");
       await assertRevert(game.prepareLaunchpad(6, 100, {from: owner}), "add new launchpad with high index");
     });
+    it('allow new, modify and delete launchpads', async function () {
+      game.prepareLaunchpad(5, 100, {from: owner}); //add new launchpad with proper index
+      (await game.launchpad(5)).should.be.bignumber.equal(100);
+      game.prepareLaunchpad(4, 55, {from: owner}); // modify a launchpad
+      (await game.launchpad(4)).should.be.bignumber.equal(55);
+
+      game.prepareLaunchpad(5, 0, {from: owner}); //remove newly added launchpad
+      await assertRevert(game.prepareLaunchpad(5, 0, {from: owner}), "launchpad can not be removed twice");
+      game.prepareLaunchpad(4, 0, {from: owner}); //remove launchpad
+      game.prepareLaunchpad(3, 0, {from: owner}); //remove launchpad
+      game.prepareLaunchpad(2, 0, {from: owner}); //remove launchpad
+      game.prepareLaunchpad(1, 0, {from: owner}); //remove launchpad
+      await assertRevert(game.prepareLaunchpad(0, 0, {from: owner}), "0 index is not allowed");
+      await assertRevert(game.prepareLaunchpad(2, 100, {from: owner}), "must start with 1");
+      game.prepareLaunchpad(1, 100, {from: owner}); //recreate launchpad
+      (await game.launchpad(1)).should.be.bignumber.equal(100);
+      game.prepareLaunchpad(2, 100, {from: owner}); //recreate launchpad
+      (await game.launchpad(2)).should.be.bignumber.equal(100);
+      game.prepareLaunchpad(3, 100, {from: owner}); //recreate launchpad
+      (await game.launchpad(3)).should.be.bignumber.equal(100);
+      game.prepareLaunchpad(4, 100, {from: owner}); //recreate launchpad
+      (await game.launchpad(4)).should.be.bignumber.equal(100);
+    });
+    it('start the round', async function () {
+      await assertRevert(game.start(60, {from: stranger}), "only by owner");
+      const {logs} = await game.start(60, {from: owner});
+      const blockTime = web3.eth.getBlock(logs[0].blockNumber).timestamp;
+      expectEvent.inLogs(logs, 'roundStart', {
+        _rounds: 1,
+        _started: blockTime,
+        _mayFinish: blockTime + 60,
+      });
+      (await game.rounds()).should.be.bignumber.equal(1);
+      let round = await game.round(1);
+      assert(!round[0]);
+    });
+    it('forbid any launchpad adjustments, after the round started', async function () {
+      await assertRevert(game.prepareLaunchpad(4, 0, {from: owner}), "forbid to remove");
+      await assertRevert(game.prepareLaunchpad(4, 100, {from: owner}), "forbid to modify");
+      await assertRevert(game.prepareLaunchpad(5, 100, {from: owner}), "forbid to add");
+    });
   });
 
   describe('rocket functions by owner', function () {
@@ -120,7 +161,7 @@ contract('MoraspaceDefense', function ([_, owner, newOwner, player1, player2, he
       await assertRevert(game.adjustRocket(2, 0, 0, 0, 0, 0, {from: owner}), "remove none last rocket");
       await assertRevert(game.adjustRocket(5 , 100, 5, 60, 1000, 0, {from: owner}), "add new rocket with high index");
     });
-    it('allow new, modify and delete rocket adjustments', async function () {
+    it('allow new, modify and delete rockets', async function () {
       game.adjustRocket(4, 100, 5, 60, 1e+14, 0, {from: owner}); //add new rocket with proper index
       game.adjustRocket(1, 90, 2, 35, 1e+15, 0, {from: owner}); //"modify a rocket
       let rocket1 = await game.rocketClass(1);
@@ -153,8 +194,9 @@ contract('MoraspaceDefense', function ([_, owner, newOwner, player1, player2, he
       assert(!round[0]);
     });
     it('forbid any rocket adjustments, after the round started', async function () {
-      await assertRevert(game.adjustRocket(3, 0, 0, 0, 0, 0, {from: owner}), "forbid remove");
-      await assertRevert(game.adjustRocket(1, 100, 1, 30, 1e+15, 1, {from: owner}), "forbid modify");
+      await assertRevert(game.adjustRocket(3, 0, 0, 0, 0, 0, {from: owner}), "forbid to remove");
+      await assertRevert(game.adjustRocket(1, 100, 1, 30, 1e+15, 1, {from: owner}), "forbid to modify");
+      await assertRevert(game.adjustRocket(4, 100, 1, 30, 1e+15, 1, {from: owner}), "forbid to add");
     });
   });
 
