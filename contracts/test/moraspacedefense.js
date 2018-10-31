@@ -142,7 +142,7 @@ contract('MoraspaceDefense', function ([_, owner, newOwner, player1, player2, he
       rocket1[1].should.be.bignumber.equal(1, "rocket 1 must has 1 merit");
       rocket1[2].should.be.bignumber.equal(30, "rocket 1 must has 30 knockback");
       rocket1[3].should.be.bignumber.equal(1e+15, "rocket 1 must has 1e+15 cost");
-      rocket1[5].should.be.bignumber.equal(1, "rocket 1 must linket to discount #1");
+      rocket1[5].should.be.bignumber.equal(1, "rocket 1 must linked to discount #1");
       let rocket2 = await game.rocketClass(2);
       rocket2[0].should.be.bignumber.equal(75, "rocket 2 must has 75 accuracy");
       let rocket3 = await game.rocketClass(3);
@@ -197,6 +197,68 @@ contract('MoraspaceDefense', function ([_, owner, newOwner, player1, player2, he
       await assertRevert(game.adjustRocket(3, 0, 0, 0, 0, 0, {from: owner}), "forbid to remove");
       await assertRevert(game.adjustRocket(1, 100, 1, 30, 1e+15, 1, {from: owner}), "forbid to modify");
       await assertRevert(game.adjustRocket(4, 100, 1, 30, 1e+15, 1, {from: owner}), "forbid to add");
+    });
+  });
+
+  describe('discount functions by owner', function () {
+    it('instantiate a new contract', async function () {
+      game = await MoraspaceDefense.new({from: owner});
+      await web3.eth.sendTransaction({from: owner, to: game.address, value: 100 });
+    });
+    it('there must be 1 discount', async function () {
+      let discount0 = await game.discount(0);
+      assert(!discount0[0], "discount 0 must be disabled");
+      let discount1 = await game.discount(1);
+      assert(discount1[0], "discount 1 must be enabled");
+      discount1[1].should.be.bignumber.equal(604800, "discount 1 must has 7 days expiracy");
+      discount1[2].should.be.bignumber.equal(0, "discount 1 must has not quanity");
+      discount1[3].should.be.bignumber.equal(8e+14, "discount 1 must has 8e+14 price");
+      discount1[4].should.be.bignumber.equal(0, "discount 1 must linked to discount #0");
+      let discount2 = await game.discount(2);
+      assert(!discount2[0], "discount 2 must be disabled");
+    });
+    it('forbid discount adjustment for stranger', async function () {
+      await assertRevert(game.prepareDiscount(1, false, 0, 0, 0, 0, {from: stranger}), "remove last discount");
+      await assertRevert(game.prepareDiscount(2, true, 604800, 0, 8e+14, 0, {from: stranger}), "add new discount");
+    });
+    it('forbid wrong discount adjustment', async function () {
+      await assertRevert(game.prepareDiscount(0, false, 0, 0, 0, 0, {from: owner}), "remove none last discount");
+      await assertRevert(game.prepareDiscount(2, false, 0, 0, 0, 0, {from: owner}), "remove unexist last discount");
+      await assertRevert(game.prepareDiscount(2, true, 604800, 0, 8e+14, 2, {from: owner}), "discount must exists");
+      await assertRevert(game.prepareDiscount(3, true, 604800, 0, 8e+14, 2, {from: owner}), "add new discount with high index");
+    });
+    it('allow new, modify and delete discounts', async function () {
+      game.prepareDiscount(2, true, 604800, 0, 8e+14, 0, {from: owner}); //add new discount with proper index
+      game.prepareDiscount(1, true, 3600, 1111, 5e+14, 2, {from: owner}); //"modify a discount
+      let discount1 = await game.discount(1);
+      assert(discount1[0], "discount 1 must be enabled");
+      discount1[1].should.be.bignumber.equal(3600, "discount 1 must has 7 days expiracy");
+      discount1[2].should.be.bignumber.equal(1111, "discount 1 must has 1111 quanity");
+      discount1[3].should.be.bignumber.equal(5e+14, "discount 1 must has 5e+14 price");
+      discount1[4].should.be.bignumber.equal(2, "discount 1 must linked to discount #2");
+      game.prepareDiscount(2, false, 0, 0, 0, 0, {from: owner}); //remove newly added discount
+      await assertRevert(game.prepareDiscount(2, false, 0, 0, 0, 0, {from: owner}), "discount can not be removed twice");
+      game.prepareDiscount(1, false, 0, 0, 0, 0, {from: owner}); //remove discount
+      await assertRevert(game.prepareDiscount(0, false, 0, 0, 0, 0, {from: owner}), "0 index is not allowed");
+      game.prepareDiscount(1, true, 604800, 0, 8e+14, 0, {from: owner}); //recreate discount
+    });
+    it('start the round', async function () {
+      await assertRevert(game.start(60, {from: stranger}), "only by owner");
+      const {logs} = await game.start(60, {from: owner});
+      const blockTime = web3.eth.getBlock(logs[0].blockNumber).timestamp;
+      expectEvent.inLogs(logs, 'roundStart', {
+        _rounds: 1,
+        _started: blockTime,
+        _mayFinish: blockTime + 60,
+      });
+      (await game.rounds()).should.be.bignumber.equal(1);
+      let round = await game.round(1);
+      assert(!round[0]);
+    });
+    it('forbid any discount adjustments, after the round started', async function () {
+      await assertRevert(game.prepareDiscount(1, false, 0, 0, 0, 0, {from: owner}), "forbid to remove");
+      await assertRevert(game.prepareDiscount(1, true, 3600, 1111, 5e+14, 2, {from: owner}), "forbid to modify");
+      await assertRevert(game.prepareDiscount(2, true, 604800, 0, 8e+14, 0, {from: owner}), "forbid to add");
     });
   });
 

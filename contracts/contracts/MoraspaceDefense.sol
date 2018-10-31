@@ -129,6 +129,10 @@ contract MoraspaceDefense is Owned {
     else if (_i == launchpads + 1) ++launchpads;
   }
 
+  /**
+   * @dev creates, deletes and modifies rocket classes before the round starts
+   * - although it prevents set links to invalid discount, it allows to remove linked discounts
+   */
   function adjustRocket(
     uint8 _i,
     uint8 _accuracy, //0 means removed
@@ -151,6 +155,10 @@ contract MoraspaceDefense is Owned {
     else if (_i == rocketClasses + 1) ++rocketClasses;
   }
 
+  /**
+   * @dev creates, deletes and modifies discount before the round starts
+   * - although it prevents set links to invalid records, it allows to remove linked records
+   */
   function prepareDiscount (
     uint8 _i,
     bool _valid, //false means removed
