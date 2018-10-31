@@ -122,11 +122,11 @@ contract MoraspaceDefense is Owned {
     uint8 _i,
     uint256 _size //0 means out of use
   ) external onlyOwner() onlyBeforeARound() {
-    require(_i <= launchpads + 1, "Index can not be higher with more than one!");
+    require(_i > 0  && _i <= launchpads + 1, "Index must be grater than 0 and lesser than number of items +1 !");
     require(!(_size == 0 && _i != launchpads), "You can remove only the last item.");
     launchpad[_i].size = _size;
     if (_size == 0) --launchpads;
-    if (_i == launchpads + 1) ++launchpads;
+    else if (_i == launchpads + 1) ++launchpads;
   }
 
   function adjustRocket(
@@ -137,7 +137,7 @@ contract MoraspaceDefense is Owned {
     uint256 _cost,
     uint8 _discount // link to discount
   ) external onlyOwner() onlyBeforeARound() {
-    require(_i <= rocketClasses + 1, "Index can not be higher with more than one!");
+    require(_i > 0  && _i <= rocketClasses + 1, "Index must be grater than 0 and lesser than number of items +1 !");
     require(!(_accuracy == 0 && _i != rocketClasses), "You can remove only the last item!");
     require(_accuracy <= 100, "Maxumum accuracy is 100!");
     require(!(_discount > 0 && (_discount > discounts || !discount[_discount].valid)),
@@ -148,7 +148,7 @@ contract MoraspaceDefense is Owned {
     rocketClass[_i].cost      = _cost;
     rocketClass[_i].discount  = _discount;
     if (_accuracy == 0) --rocketClasses;
-    if (_i == rocketClasses + 1) ++rocketClasses;
+    else if (_i == rocketClasses + 1) ++rocketClasses;
   }
 
   function prepareDiscount (
@@ -159,7 +159,7 @@ contract MoraspaceDefense is Owned {
     uint256 _cost,
     uint8 _nextDiscount //when current discount expired can replaced by the next.
   ) external onlyOwner() onlyBeforeARound() {
-    require(_i <= discounts + 1, "Index can not be higher with more than one!");
+    require(_i > 0  && _i <= discounts + 1, "Index must be grater than 0 and lesser than number of items +1 !");
     require(!(_valid == false && _i != discounts), "You can remove only the last item!");
     require(!(_nextDiscount > 0 && !discount[_nextDiscount].valid), "Invalid next discount!");
     discount[_i].valid    = _valid;
@@ -168,7 +168,7 @@ contract MoraspaceDefense is Owned {
     discount[_i].cost     = _cost;
     discount[_i].next     = _nextDiscount;
     if (_valid == false) --discounts;
-    if (_i == discounts + 1) ++discounts;
+    else if (_i == discounts + 1) ++discounts;
   }
 
   function updatePrizeDist(

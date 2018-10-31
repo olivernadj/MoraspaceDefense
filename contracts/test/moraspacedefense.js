@@ -55,7 +55,6 @@ contract('MoraspaceDefense', function ([_, owner, newOwner, player1, player2, he
       });
       (await game.rounds()).should.be.bignumber.equal(1);
       let round = await game.round(1);
-      //console.log(round);
       assert(!round[0]);
     });
     it('pot withdraws must not allowed during the game', async function () {
@@ -130,6 +129,32 @@ contract('MoraspaceDefense', function ([_, owner, newOwner, player1, player2, he
       rocket1[2].should.be.bignumber.equal(35, "rocket 1 must has 35 knockback");
       rocket1[3].should.be.bignumber.equal(1e+15, "rocket 1 must has 1e+15 cost");
       rocket1[5].should.be.bignumber.equal(0, "rocket 1 must not linked to discounts");
+      game.adjustRocket(4, 0, 0, 0, 0, 0, {from: owner}); //remove newly added rocket
+      await assertRevert(game.adjustRocket(4, 0, 0, 0, 0, 0, {from: owner}), "rocket can not be removed twice");
+      game.adjustRocket(3, 0, 0, 0, 0, 0, {from: owner}); //remove rocket
+      game.adjustRocket(2, 0, 0, 0, 0, 0, {from: owner}); //remove rocket
+      game.adjustRocket(1, 0, 0, 0, 0, 0, {from: owner}); //remove rocket
+      await assertRevert(game.adjustRocket(0, 0, 0, 0, 0, 0, {from: owner}), "0 index is not allowed");
+      game.adjustRocket(1, 100, 1, 30, 1e+15, 1, {from: owner}); //recreate rockets
+      game.adjustRocket(2, 75, 5, 60, 3e+15, 0, {from: owner}); //recreate rockets
+      game.adjustRocket(3, 50, 12, 120, 5e+15, 0, {from: owner}); //recreate rockets
+    });
+    it('start the round', async function () {
+      await assertRevert(game.start(60, {from: stranger}), "only by owner");
+      const {logs} = await game.start(60, {from: owner});
+      const blockTime = web3.eth.getBlock(logs[0].blockNumber).timestamp;
+      expectEvent.inLogs(logs, 'roundStart', {
+        _rounds: 1,
+        _started: blockTime,
+        _mayFinish: blockTime + 60,
+      });
+      (await game.rounds()).should.be.bignumber.equal(1);
+      let round = await game.round(1);
+      assert(!round[0]);
+    });
+    it('forbid any rocket adjustments, after the round started', async function () {
+      await assertRevert(game.adjustRocket(3, 0, 0, 0, 0, 0, {from: owner}), "forbid remove");
+      await assertRevert(game.adjustRocket(1, 100, 1, 30, 1e+15, 1, {from: owner}), "forbid modify");
     });
   });
 
