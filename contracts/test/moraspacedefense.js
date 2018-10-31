@@ -262,6 +262,58 @@ contract('MoraspaceDefense', function ([_, owner, newOwner, player1, player2, he
     });
   });
 
+
+  describe('prize distribution functions by owner', function () {
+    it('instantiate a new contract', async function () {
+      game = await MoraspaceDefense.new({from: owner});
+      await web3.eth.sendTransaction({from: owner, to: game.address, value: 100 });
+    });
+    it('pie char must match', async function () {
+      let prizeDist = await game.prizeDist();
+      prizeDist[0].should.be.bignumber.equal(50, "hero share must be 50% !");
+      prizeDist[1].should.be.bignumber.equal(24, "bounty puul must be 24% !");
+      prizeDist[2].should.be.bignumber.equal(11, "next round funding must be 11% !");
+      prizeDist[3].should.be.bignumber.equal(10, "affiliate fee to partner must be 10% !");
+      prizeDist[4].should.be.bignumber.equal(5, "owner share must be 5% !");
+    });
+    it('forbid prize distribution adjustment for stranger', async function () {
+      await assertRevert(game.updatePrizeDist(50, 24, 22, 10, 5, {from: stranger}));
+    });
+    it('forbid wrong discount adjustment', async function () {
+      await assertRevert(game.updatePrizeDist(1, 2, 3, 4, 5, {from: owner}), "remove none last discount");
+      await assertRevert(game.updatePrizeDist(20, 20, 20, 20, 21, {from: owner}), "remove unexist last discount");
+    });
+    it('modify prize distribution', async function () {
+      game.updatePrizeDist(50, 24, 11, 10, 5, {from: owner});
+      game.updatePrizeDist(20, 20, 20, 20, 20, {from: owner});
+      game.updatePrizeDist(90, 4, 3, 2, 1, {from: owner});
+      let prizeDist = await game.prizeDist();
+      prizeDist[0].should.be.bignumber.equal(90, "hero share must be 50% !");
+      prizeDist[1].should.be.bignumber.equal(4, "bounty puul must be 24% !");
+      prizeDist[2].should.be.bignumber.equal(3, "next round funding must be 11% !");
+      prizeDist[3].should.be.bignumber.equal(2, "affiliate fee to partner must be 10% !");
+      prizeDist[4].should.be.bignumber.equal(1, "owner share must be 5% !");
+    });
+    it('start the round', async function () {
+      await assertRevert(game.start(60, {from: stranger}), "only by owner");
+      const {logs} = await game.start(60, {from: owner});
+      const blockTime = web3.eth.getBlock(logs[0].blockNumber).timestamp;
+      expectEvent.inLogs(logs, 'roundStart', {
+        _rounds: 1,
+        _started: blockTime,
+        _mayFinish: blockTime + 60,
+      });
+      (await game.rounds()).should.be.bignumber.equal(1);
+      let round = await game.round(1);
+      assert(!round[0]);
+    });
+    it('forbid any discount adjustments, after the round started', async function () {
+      await assertRevert(game.updatePrizeDist(50, 24, 11, 10, 5, {from: owner}));
+      await assertRevert(game.updatePrizeDist(20, 20, 20, 20, 20, {from: owner}));
+      await assertRevert(game.updatePrizeDist(90, 4, 3, 2, 1, {from: owner}));
+    });
+  });
+
   describe('save address to ../web/MoraspaceDefense.address', function () {
     it('instantiate a new contract and save the address', async function () {
       game = await MoraspaceDefense.new({from: owner});

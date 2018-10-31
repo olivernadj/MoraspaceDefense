@@ -118,6 +118,9 @@ contract MoraspaceDefense is Owned {
     prizeDist.moraspace = 5;
   }
 
+  /**
+   * @dev creates, deletes and modifies launchpad
+   */
   function prepareLaunchpad (
     uint8 _i,
     uint256 _size //0 means out of use
@@ -214,7 +217,6 @@ contract MoraspaceDefense is Owned {
     pot = pot.sub(_eth);
     _to.transfer(_eth);
   }
-
 
   /**
    * @dev start a new round
