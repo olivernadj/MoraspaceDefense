@@ -54,7 +54,9 @@ contract MoraspaceDefense is Owned {
   mapping (uint256 => DataSets.Player) public player;
   address[] public playerDict;
 
-  event potWithdraw(uint256 indexed _eth, address indexed _to, address indexed _by);
+  event potWithdraw(uint256 indexed _eth, address indexed _to);
+  event roundStart(uint16 indexed _rounds, uint256 indexed _started, uint256 indexed _mayFinish);
+
 
   /**
    * @dev allows things happen before the new round started
@@ -109,7 +111,7 @@ contract MoraspaceDefense is Owned {
     rocketClass[2]      = DataSets.Rocket(75, 5, 60, 3000000000000000, 0, 0);
     rocketClass[3]      = DataSets.Rocket(50, 12, 120, 5000000000000000, 0, 0);
     rocketClasses       = 3;
-    prizeDist.hiro      = 50;
+    prizeDist.hero      = 50;
     prizeDist.bounty    = 24;
     prizeDist.next      = 11;
     prizeDist.partners  = 10;
@@ -170,15 +172,15 @@ contract MoraspaceDefense is Owned {
   }
 
   function updatePrizeDist(
-    uint8 _hiro,
+    uint8 _hero,
     uint8 _bounty,
     uint8 _next,
     uint8 _partners,
     uint8 _moraspace
   ) external onlyOwner() onlyBeforeARound() {
-    require(_hiro + _bounty + _next + _partners + _moraspace == 100,
+    require(_hero + _bounty + _next + _partners + _moraspace == 100,
       "O.o The sum of pie char should be around 100!");
-    prizeDist.hiro      = _hiro;
+    prizeDist.hero      = _hero;
     prizeDist.bounty    = _bounty;
     prizeDist.next      = _next;
     prizeDist.partners  = _partners;
@@ -200,7 +202,7 @@ contract MoraspaceDefense is Owned {
     require(_eth > 0, "The requested amount need to be explicit!");
     require(_eth <= pot, "Insufficient found!");
     require(_to != address(0), "Address can not be zero!");
-    emit potWithdraw(_eth, _to, msg.sender);
+    emit potWithdraw(_eth, _to);
     pot = pot.sub(_eth);
     _to.transfer(_eth);
   }
@@ -210,9 +212,9 @@ contract MoraspaceDefense is Owned {
    * @dev start a new round
    */
   function start(uint256 _duration) external onlyOwner() onlyBeforeARound() {
-    require(prizeDist.hiro + prizeDist.bounty + prizeDist.next + prizeDist.partners + prizeDist.moraspace == 100,
+    require(prizeDist.hero + prizeDist.bounty + prizeDist.next + prizeDist.partners + prizeDist.moraspace == 100,
       "O.o The sum of pie char should be around 100!");
-    require(rocketClasses > 0, "Not rocket calsses added!");
+    require(rocketClasses > 0, "No rockets in the game!");
     require(_duration > 59, "Round duration must be at least 1 minute!");
     for (uint8 i = 0; i < rocketClasses; ++i) {
       rocketSupply[i] = rocketClass[i];
@@ -222,6 +224,7 @@ contract MoraspaceDefense is Owned {
     round[rounds].duration  = _duration;
     round[rounds].started   = now;
     round[rounds].mayFinish = now.add(_duration);
+    emit roundStart(rounds, round[rounds].started, round[rounds].mayFinish);
   }
 
   function maintainPlayer (address _addr, uint256 _index) internal returns (uint256) {
@@ -319,7 +322,7 @@ contract MoraspaceDefense is Owned {
       _pr.merit[_launchpad] += _m;
       _rd.merit[_launchpad] += _m;
       _rd.mayFinish         += _rt.knockback.mul(_hits);
-      _rd.hiro               = msg.sender;
+      _rd.hero               = msg.sender;
     }
     return _hits;
   }
@@ -335,10 +338,10 @@ contract MoraspaceDefense is Owned {
   function finish(uint256 _player) public onlyOwner() onlyLiveRound() {
     require(timeTillImpact() == 0, "Not yet!");
     DataSets.Round storage _rd   = round[rounds];
-    _player                      = maintainPlayer(_rd.hiro, _player);
+    _player                      = maintainPlayer(_rd.hero, _player);
     DataSets.Player storage _pr  = player[_player];
-    hero[rounds].addr            = _rd.hiro;
-    _rd.jackpot                  = pot.div(100).mul(prizeDist.hiro);
+    hero[rounds].addr            = _rd.hero;
+    _rd.jackpot                  = pot.div(100).mul(prizeDist.hero);
     _rd.bounty                   = pot.div(_rd.merit[_rd.launchpad].sub(_pr.merit[_rd.launchpad]));
     _rd.merit[_rd.launchpad]     = _rd.merit[_rd.launchpad].sub(_pr.merit[_rd.launchpad]);
     _pr.merit[_rd.launchpad]     = 0;
@@ -357,8 +360,8 @@ contract MoraspaceDefense is Owned {
     _to.transfer(_eth);
   }
 
-  function setHiroName(uint16 _round, string _name) external payable {
-    require(msg.sender == hero[_round].addr, "The address does not match with the hiro!");
+  function setHeroName(uint16 _round, string _name) external payable {
+    require(msg.sender == hero[_round].addr, "The address does not match with the hero!");
     require(10000000000000000 == msg.value, "The payment must be 0.01ETH!");
     pot              += 10000000000000000; // temporary goes to pot
     hero[_round].name = _name.nameFilter();

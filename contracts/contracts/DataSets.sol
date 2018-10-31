@@ -25,7 +25,7 @@ library DataSets {
   }
 
   struct PrizeDist {
-    uint8 hiro; // hiro jackpot.
+    uint8 hero; // hero jackpot.
     uint8 bounty; // bounty pool.
     uint8 next; // next round pot.
     uint8 partners; // affiliate partners.
@@ -40,7 +40,7 @@ library DataSets {
     uint256[] merit; // accumilated merits on each launchpads.
     uint256 jackpot; // jackpot amount eg.: 50% of the pot.
     uint256 bounty; // bounty for each merits on winning launchpad.
-    address hiro; // last hero.
+    address hero; // last hero.
     uint8 launchpad; // last launchpad.
   }
 
