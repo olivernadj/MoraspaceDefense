@@ -70,7 +70,7 @@ contract MoraspaceDefense is Owned {
    * @dev allows things happen before the new round started
    */
   modifier beforeNotTooLate {
-    require(round[rounds].mayImpactAt < now, "Sorry it is too late!");
+    require(round[rounds].mayImpactAt > now, "Sorry it is too late!");
     _;
   }
 
@@ -239,10 +239,13 @@ contract MoraspaceDefense is Owned {
     round[rounds].duration  = _duration;
     round[rounds].started   = now;
     round[rounds].mayImpactAt = now.add(_duration);
+    for (i = 0; i < launchpads; ++i) {
+      round[rounds].merit.push(0);
+    }
     emit roundStart(rounds, round[rounds].started, round[rounds].mayImpactAt);
   }
 
-  function maintainPlayer (address _addr, uint256 _index) internal returns (uint256) {
+  function findUserIndex (address _addr, uint256 _index) public view returns (uint256) {
     require(!(_index > 0 && _addr != playerDict[_index]), "Forbidden!");
     if (_index == 0) {
       for (uint i = 0; i < playerDict.length; i++) {
@@ -252,29 +255,55 @@ contract MoraspaceDefense is Owned {
         }
       }
     }
-    if (_index == 0) {
-      DataSets.Player memory _pm;
-      _index = playerDict.push(_addr) - 1;
-      _pm.addr = _addr;
-      _pm.round = rounds;
-      _pm.updated = now;
-      player[_index] = _pm;
-    }
+    return _index;
+  }
+
+  function maintainPlayerPrize (address _addr, uint256 _index) internal returns (uint256) {
+    require(_addr == playerDict[_index], "Forbidden!");
     DataSets.Player storage _p = player[_index];
     DataSets.Round storage _r = round[_p.round];
     if (_p.round != rounds) {
-      if (_p.merit[_r.launchpad] > 0 ) {
+      if (_p.merit[_r.launchpad] > 0) {
         _p.earnings = _p.merit[_r.launchpad].mul(_r.bounty);
         _p.updated = now;
-        for (i = 0; i < _p.merit.length; i++) {
-          delete _p.merit[i];
-        }
+        _p.merit[_r.launchpad] = 0;
       }
     }
     return _index;
   }
 
-  function maintainDiscount(uint8 _rocket, uint8 _amount) internal returns (uint256) {
+  function maintainPlayer (address _addr, uint256 _index) internal returns (uint256) {
+    require(!(_index > 0 && _addr != playerDict[_index]), "Forbidden!");
+    if (_index == 0) {
+      _index = findUserIndex(_addr, _index);
+      if (_index == 0) {
+        _index = playerDict.push(_addr) - 1;
+      }
+    }
+    DataSets.Player storage _p = player[_index];
+    if (address(0) == _p.addr) { // new user
+      _p.addr = _addr;
+      _p.round = rounds;
+      _p.updated = now;
+      for (uint256 i = 0; i < launchpads; ++i) {
+        _p.merit.push(0);
+      }
+    } else if (_p.round != rounds) {
+      // played in previous round therfore must main the prize
+      maintainPlayerPrize(_addr, _index);
+      for (i = 0; i < _p.merit.length; i++) {
+        _p.merit[i] = 0;
+      }
+      for (i = _p.merit.length; i < launchpads; i++) {
+        _p.merit.push(0);
+      }
+      _p.round   = rounds;
+      _p.updated = now;
+    }
+    return _index;
+  }
+
+  function consumeDiscount(uint8 _rocket, uint8 _amount) internal returns (uint256) {
     require(_rocket < rocketClasses, "Undefined rocket!");
     DataSets.Rocket storage _r = rocketSupply[_rocket];
     uint256 _cost = _r.cost;
@@ -317,14 +346,15 @@ contract MoraspaceDefense is Owned {
     uint8 _amount,
     uint8 _launchpad,
     uint256 _player // performance improvement. Let web3 find the user index
-  ) external payable onlyLiveRound() beforeNotTooLate() returns(uint8 _hits) {
-    require(_launchpad < launchpads, "Undefined launchpad!");
+  ) external payable onlyLiveRound() returns(uint8 _hits) {
+    require(round[rounds].mayImpactAt > now, "Sorry it is too late!");
+    require(_launchpad <= launchpads, "Undefined launchpad!");
     require(_amount > 0 && _amount <= launchpad[_launchpad].size,
       "Rockets need to be more than one and maximam as mach as the launchpad can handle");
-    uint256 _totalCost = maintainDiscount(_rocket, _amount);
-    require(_totalCost > msg.value, "Insufficient found!");
+    uint256 _totalCost = consumeDiscount(_rocket, _amount);
+    require(_totalCost <= msg.value, "Insufficient found!");
     DataSets.Rocket storage _rt    = rocketSupply[_rocket];
-    require(_rt.cost.mul(_amount) < msg.value, "We do not accept tips!");
+    require(_rt.cost.mul(_amount) >= msg.value, "We do not accept tips!");
     uint256 _pIndex = maintainPlayer(msg.sender, _player);
     DataSets.Player storage _pr    = player[_pIndex];
     DataSets.Round storage _rd     = round[rounds];
@@ -333,11 +363,12 @@ contract MoraspaceDefense is Owned {
       if (getRandom(100) < _rt.accuracy)
         ++_hits;
     if (_hits > 0) {
-      uint256 _m             = _rt.merit.mul(_hits);
-      _pr.merit[_launchpad] += _m;
-      _rd.merit[_launchpad] += _m;
+      uint256 _m;
+      _m                       = _rt.merit.mul(_hits);
+      _pr.merit[_launchpad-1] += _m;
+      _rd.merit[_launchpad-1] += _m;
       _rd.mayImpactAt         += _rt.knockback.mul(_hits);
-      _rd.hero               = msg.sender;
+      _rd.hero                = msg.sender;
     }
     if (_totalCost < msg.value) {
       msg.sender.transfer(msg.value.sub(_totalCost));
@@ -347,7 +378,7 @@ contract MoraspaceDefense is Owned {
   }
 
   function timeTillImpact() public view returns (uint256) {
-    if (round[rounds].mayImpactAt < now){
+    if (round[rounds].mayImpactAt > now){
       return round[rounds].mayImpactAt.sub(now);
     } else {
       return 0;

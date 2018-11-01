@@ -12,7 +12,9 @@ require('chai')
   .use(require('chai-bignumber')(BigNumber))
   .should();
 
-contract('MoraspaceDefense', function ([_, owner, newOwner, player1, player2, hero, stranger]) {
+contract('MoraspaceDefense', function (
+    [_, owner, newOwner, player1, player2, player3, player4, player5, hero, stranger]
+  ) {
   const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
   let game;
@@ -328,6 +330,7 @@ contract('MoraspaceDefense', function ([_, owner, newOwner, player1, player2, he
       await assertRevert(game.start(60, {from: stranger}), "only by owner");
       const {logs} = await game.start(60, {from: owner});
       const blockTime = web3.eth.getBlock(logs[0].blockNumber).timestamp;
+      console.log(blockTime);
       expectEvent.inLogs(logs, 'roundStart', {
         _rounds: 1,
         _started: blockTime,
@@ -338,10 +341,22 @@ contract('MoraspaceDefense', function ([_, owner, newOwner, player1, player2, he
       assert(!round[0]);
     });
     it('forbids inappropriate rocket launches', async function () {
-      await assertRevert(game.launchRocket(2, 1, 1, 0, {from: owner, value: 29e+14})); //underpaid
+      // await assertRevert(game.launchRocket(2, 1, 1, 0, {from: player1, value: 29e+14})); //underpaid
+      // await assertRevert(game.launchRocket(2, 10, 5, 0, {from: player1, value: 3e+15})); //launchpad overload
     });
     it('rocket launches', async function () {
-      await assertRevert(game.launchRocket(2, 1, 1, 0, {from: owner, value: 3e+15})); //underpaid
+      const round1 = await game.round(1, {from: stranger});
+      const r1 = await game.launchRocket(1, 1, 1, 0, {from: player2, value: 1e+15});
+      //const blockTime = web3.eth.getBlock(logs[0].blockNumber).timestamp;
+      //console.log(round1[3].toNumber());
+      //console.log(r1.logs);
+      //console.log(blockTime);
+      expectEvent.inLogs(r1.logs, 'rocketLaunch', {
+        _hits: 1,
+        _mayImpactAt: round1[3].toNumber() + 30,
+      });
+      //const {log2} = await game.launchRocket(3, 100, 2, 0, {from: player3, value: 5e+17});
+      //console.log(log2);
     });
   });
 
