@@ -36,7 +36,7 @@ library DataSets {
     bool over; // true means game over.
     uint256 started; // static value of time stamp when the round started.
     uint256 duration; // statuc value of initial duration.
-    uint256 mayFinish; // finish timestamp. can be knockback (increment) with hits before this time reached.
+    uint256 mayImpactAt; // impact timestamp. can be knockback (increment) with hits before this time reached.
     uint256[] merit; // accumilated merits on each launchpads.
     uint256 jackpot; // jackpot amount eg.: 50% of the pot.
     uint256 bounty; // bounty for each merits on winning launchpad.

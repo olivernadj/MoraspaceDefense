@@ -51,7 +51,7 @@ contract('MoraspaceDefense', function ([_, owner, newOwner, player1, player2, he
       expectEvent.inLogs(logs, 'roundStart', {
         _rounds: 1,
         _started: blockTime,
-        _mayFinish: blockTime + 60,
+        _mayImpactAt: blockTime + 60,
       });
       (await game.rounds()).should.be.bignumber.equal(1);
       let round = await game.round(1);
@@ -116,7 +116,7 @@ contract('MoraspaceDefense', function ([_, owner, newOwner, player1, player2, he
       expectEvent.inLogs(logs, 'roundStart', {
         _rounds: 1,
         _started: blockTime,
-        _mayFinish: blockTime + 60,
+        _mayImpactAt: blockTime + 60,
       });
       (await game.rounds()).should.be.bignumber.equal(1);
       let round = await game.round(1);
@@ -187,7 +187,7 @@ contract('MoraspaceDefense', function ([_, owner, newOwner, player1, player2, he
       expectEvent.inLogs(logs, 'roundStart', {
         _rounds: 1,
         _started: blockTime,
-        _mayFinish: blockTime + 60,
+        _mayImpactAt: blockTime + 60,
       });
       (await game.rounds()).should.be.bignumber.equal(1);
       let round = await game.round(1);
@@ -249,7 +249,7 @@ contract('MoraspaceDefense', function ([_, owner, newOwner, player1, player2, he
       expectEvent.inLogs(logs, 'roundStart', {
         _rounds: 1,
         _started: blockTime,
-        _mayFinish: blockTime + 60,
+        _mayImpactAt: blockTime + 60,
       });
       (await game.rounds()).should.be.bignumber.equal(1);
       let round = await game.round(1);
@@ -261,7 +261,6 @@ contract('MoraspaceDefense', function ([_, owner, newOwner, player1, player2, he
       await assertRevert(game.prepareDiscount(2, true, 604800, 0, 8e+14, 0, {from: owner}), "forbid to add");
     });
   });
-
 
   describe('prize distribution functions by owner', function () {
     it('instantiate a new contract', async function () {
@@ -301,7 +300,7 @@ contract('MoraspaceDefense', function ([_, owner, newOwner, player1, player2, he
       expectEvent.inLogs(logs, 'roundStart', {
         _rounds: 1,
         _started: blockTime,
-        _mayFinish: blockTime + 60,
+        _mayImpactAt: blockTime + 60,
       });
       (await game.rounds()).should.be.bignumber.equal(1);
       let round = await game.round(1);
@@ -311,6 +310,38 @@ contract('MoraspaceDefense', function ([_, owner, newOwner, player1, player2, he
       await assertRevert(game.updatePrizeDist(50, 24, 11, 10, 5, {from: owner}));
       await assertRevert(game.updatePrizeDist(20, 20, 20, 20, 20, {from: owner}));
       await assertRevert(game.updatePrizeDist(90, 4, 3, 2, 1, {from: owner}));
+    });
+  });
+
+  describe('let the game begin', function () {
+    it('instantiate a new contract', async function () {
+      game = await MoraspaceDefense.new({from: owner});
+      await web3.eth.sendTransaction({from: owner, to: game.address, value: 100 });
+    });
+    it('customize the game for all features testing', async function () {
+      game.prepareDiscount(2, true, 0, 15, 3e+14, 0, {from: owner});
+      game.prepareDiscount(3, true, 45, 0, 2e+14, 2, {from: owner});
+      game.prepareDiscount(1, true, 30, 10, 1e+14, 3, {from: owner});
+      game.prepareLaunchpad(4, 5, {from: owner});
+    });
+    it('start the round', async function () {
+      await assertRevert(game.start(60, {from: stranger}), "only by owner");
+      const {logs} = await game.start(60, {from: owner});
+      const blockTime = web3.eth.getBlock(logs[0].blockNumber).timestamp;
+      expectEvent.inLogs(logs, 'roundStart', {
+        _rounds: 1,
+        _started: blockTime,
+        _mayImpactAt: blockTime + 60,
+      });
+      (await game.rounds()).should.be.bignumber.equal(1);
+      let round = await game.round(1);
+      assert(!round[0]);
+    });
+    it('forbids inappropriate rocket launches', async function () {
+      await assertRevert(game.launchRocket(2, 1, 1, 0, {from: owner, value: 29e+14})); //underpaid
+    });
+    it('rocket launches', async function () {
+      await assertRevert(game.launchRocket(2, 1, 1, 0, {from: owner, value: 3e+15})); //underpaid
     });
   });
 
