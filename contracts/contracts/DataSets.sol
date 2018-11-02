@@ -37,7 +37,7 @@ library DataSets {
     uint256 started; // static value of time stamp when the round started.
     uint256 duration; // statuc value of initial duration.
     uint256 mayImpactAt; // impact timestamp. can be knockback (increment) with hits before this time reached.
-    uint256[] merit; // accumilated merits on each launchpads.
+    uint256 merit; // total merit on the winner launchpads.
     uint256 jackpot; // jackpot amount eg.: 50% of the pot.
     uint256 bounty; // bounty for each merits on winning launchpad.
     address hero; // last hero.
@@ -47,7 +47,7 @@ library DataSets {
   struct Player {
     uint16 round; // last participated round.
     address addr; // ETH address of the player.
-    uint256[] merit; // accumilated merits on each launchpads.
+    uint32[] merit; // accumilated merits on each launchpads.
     uint256 earnings; // Withdrawable amount.
     uint256 updated; // last modified.
   }

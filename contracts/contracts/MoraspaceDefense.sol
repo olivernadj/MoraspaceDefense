@@ -51,6 +51,7 @@ contract MoraspaceDefense is Owned {
   mapping (uint16 => DataSets.Hero) public hero;
   mapping (uint16 => DataSets.Round) public round;
   uint16 public rounds;
+  uint32[] public merit;
   mapping (uint256 => DataSets.Player) public player;
   address[] public playerDict;
 
@@ -116,7 +117,7 @@ contract MoraspaceDefense is Owned {
     prizeDist.next      = 11;
     prizeDist.partners  = 10;
     prizeDist.moraspace = 5;
-    player[0]           = DataSets.Player(0, address(0), new uint256[](0), 0, 0);
+    player[0]           = DataSets.Player(0, address(0), new uint32[](0), 0, 0);
     playerDict.push(address(0));
   }
 
@@ -242,20 +243,21 @@ contract MoraspaceDefense is Owned {
     round[rounds].started   = now;
     round[rounds].mayImpactAt = now.add(_duration);
     for (i = 0; i < launchpads; ++i) {
-      round[rounds].merit.push(0);
+      if (i >= merit.length) merit.push(0);
+      else merit[i]=0;
     }
     emit roundStart(rounds, round[rounds].started, round[rounds].mayImpactAt);
   }
 
-  function getPlayerMerits(address _addr, uint256 _index) public view returns (uint256[]) {
-    require(address(0) != _addr, "Player not found!");
+  function getPlayerMerits(address _addr, uint256 _index) public view returns (uint32[]) {
+    require(address(0) != _addr && _index < playerDict.length, "Player not found!");
     _index = findPlayerIndex(_addr, _index);
     require(_index > 0, "Player not found!");
     return player[_index].merit;
   }
 
   function findPlayerIndex(address _addr, uint256 _index) public view returns (uint256) {
-    require(address(0) != _addr, "Player not found!");
+    require(address(0) != _addr && _index < playerDict.length, "Player not found!");
     require(!(_index > 0 && _addr != playerDict[_index]), "Forbidden!");
     if (_index == 0) {
       for (uint i = 0; i < playerDict.length; i++) {
@@ -269,18 +271,17 @@ contract MoraspaceDefense is Owned {
   }
 
   function maintainPlayer(address _addr, uint256 _index) internal returns (uint256) {
-    require(address(0) != _addr, "Player not found!");
+    require(address(0) != _addr && _index < playerDict.length, "Player not found!");
     require(!(_index > 0 && _addr != playerDict[_index]), "Forbidden!");
     if (_index == 0) {
       _index = findPlayerIndex(_addr, _index);
       if (_index == 0) {
-        DataSets.Player memory _new;
-        player[_index] = _new;
+        player[_index] = DataSets.Player(0, address(0), new uint32[](0), 0, 0);
         _index = playerDict.push(_addr) - 1;
       }
     }
     DataSets.Player storage _p = player[_index];
-    if (address(0) == _p.addr) { // new user
+    if (_p.updated == 0) { // new user
       _p.addr = _addr;
       _p.round = rounds;
       _p.updated = now;
@@ -350,7 +351,7 @@ contract MoraspaceDefense is Owned {
     uint256 _player // performance improvement. Let web3 find the user index
   ) external payable onlyLiveRound() returns(uint8 _hits) {
     require(round[rounds].mayImpactAt > now, "Sorry it is too late!");
-    require(_launchpad <= launchpads, "Undefined launchpad!");
+    require(_launchpad > 0 && _launchpad <= launchpads, "Undefined launchpad!");
     require(_amount > 0 && _amount <= launchpad[_launchpad].size,
       "Rockets need to be more than one and maximam as mach as the launchpad can handle");
     uint256 _totalCost = consumeDiscount(_rocket, _amount);
@@ -365,12 +366,11 @@ contract MoraspaceDefense is Owned {
       if (getRandom(100, now + i) < _rt.accuracy)
         ++_hits;
     if (_hits > 0) {
-      uint256 _m;
-      _m                       = _rt.merit.mul(_hits);
-      _pr.merit[_launchpad-1] += _m;
-      _rd.merit[_launchpad-1] += _m;
-      _rd.mayImpactAt         += _rt.knockback.mul(_hits);
-      _rd.hero                = msg.sender;
+      uint256 _m               = _rt.merit.mul(_hits);
+      _pr.merit[_launchpad-1]  = uint32(_pr.merit[_launchpad-1].add(_m));
+      merit[_launchpad-1]      = uint32(merit[_launchpad-1].add(_m));
+      _rd.mayImpactAt          = _rd.mayImpactAt.add(_rt.knockback.mul(_hits));
+      _rd.hero                 = msg.sender;
     }
     if (_totalCost < msg.value) {
       msg.sender.transfer(msg.value.sub(_totalCost));
@@ -393,12 +393,12 @@ contract MoraspaceDefense is Owned {
     _player                      = maintainPlayer(_rd.hero, _player);
     DataSets.Player storage _pr  = player[_player];
     hero[rounds].addr            = _rd.hero;
+    _rd.merit                    = merit[_rd.launchpad-1].sub(_pr.merit[_rd.launchpad-1]);
     _rd.jackpot                  = pot.div(100).mul(prizeDist.hero);
-    _rd.bounty                   = pot.div(_rd.merit[_rd.launchpad].sub(_pr.merit[_rd.launchpad]));
-    _rd.merit[_rd.launchpad-1]   = _rd.merit[_rd.launchpad].sub(_pr.merit[_rd.launchpad]);
+    _rd.bounty                   = pot.div(100).mul(prizeDist.bounty).div(_rd.merit);
     _pr.merit[_rd.launchpad-1]   = 0;
     _pr.earnings                 = _rd.jackpot;
-    pot                          = pot.sub(_rd.jackpot).sub(_rd.merit[_rd.launchpad].mul(_rd.bounty));
+    pot                          = pot.sub(_rd.jackpot).sub(_rd.merit.mul(_rd.bounty));
     _rd.over                     = true;
   }
 

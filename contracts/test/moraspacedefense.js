@@ -355,47 +355,37 @@ contract('MoraspaceDefense', function (
     it('forbids inappropriate rocket launches', async function () {
       await assertRevert(game.launchRocket(2, 1, 1, 0, {from: player1, value: 29e+14})); //underpaid
       await assertRevert(game.launchRocket(2, 10, 5, 0, {from: player1, value: 3e+15})); //launchpad overload
+      await assertRevert(game.launchRocket(1, 1, 1, 1, {from: player2, value: 1e+15})); //invalid user id
     });
     it('rocket 1 launches', async function () {
       const round1 = await game.round(1, {from: stranger});
-      // console.log(round1[3].toNumber());
-      let result = await game.launchRocket(1, 1, 1, 0, {from: player2, value: 1e+15});
+      //console.log(round1[3].toNumber());
+      await game.launchRocket(1, 1, 1, 0, {from: player2, value: 1e+15});
+      let result = await game.launchRocket(1, 1, 1, 1, {from: player2, value: 1e+15});
       expectEvent.inLogs(result.logs, 'rocketLaunch', {
         _hits: 1,
-        _mayImpactAt: round1[3].toNumber() + 30,
+        _mayImpactAt: round1[3].toNumber() + 60,
       });
-      let mertis2 = await game.getPlayerMerits(player2, 0, {from: player2});
-      //console.log(mertis2);
-      mertis2[0].should.be.bignumber.equal(1);
-      //await assertRevert(game.launchRocket(1, 10, 2, 2, {from: player2, value: 2e+15})); //user id mismatch
-      result = await game.launchRocket(1, 10, 2, 1, {from: player2, value: 2e+15});
+      result = await game.launchRocket(1, 10, 2, 0, {from: player4, value: 2e+15});
       expectEvent.inLogs(result.logs, 'rocketLaunch', {
         _hits: 10,
-        _mayImpactAt: round1[3].toNumber() + 330,
+        _mayImpactAt: round1[3].toNumber() + 360,
       });
-      mertis2 = await game.getPlayerMerits(player2, 1, {from: player2});
-      //console.log(mertis2);
-      mertis2[1].should.be.bignumber.equal(10);
+    });
+    it('check merits (affected by rocket 1 launches)', async function () {
+      let mertis2 = await game.getPlayerMerits(player2, 0, {from: stranger});
+      mertis2[0].should.be.bignumber.equal(2);
+      let mertis4 = await game.getPlayerMerits(player4, 2, {from: stranger});
+      mertis4[1].should.be.bignumber.equal(10);
+      // let merit0 = await game.merit(0, {from: stranger});
+      // console.log(merit0);
     });
     it('rocket 2 launches', async function () {
       result = await game.launchRocket(3, 100, 2, 0, {from: player3, value: 5e+17});
       var hits = result.logs[0].args._hits.toNumber();
-      //console.log(hits);
       assert(hits > 40 && hits < 60, "success rate should be +/- 10%");
-
       const mertis3 = await game.getPlayerMerits(player3, 0, {from: stranger});
-      //console.log(mertis2);
       mertis3[1].should.be.bignumber.equal(hits * 12);
-
-      //const blockTime = web3.eth.getBlock(logs[0].blockNumber).timestamp;
-      //console.log(r1.logs);
-      //console.log(blockTime);
-
-      // for (i = 0; i < 10; ++i) {
-      //   result = await game.launchRocket(3, 100, 2, 0, {from: player3, value: 5e+17});
-      //   console.log(result.logs[0].args._hits.toNumber());
-      // }
-
     });
   });
 
