@@ -17,6 +17,18 @@ contract('MoraspaceDefense', function (
   ) {
   const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
+  it("get the size of the contract", function() {
+    return MoraspaceDefense.deployed().then(function(instance) {
+      var bytecode = instance.constructor._json.bytecode;
+      var deployed = instance.constructor._json.deployedBytecode;
+      var sizeOfB  = bytecode.length / 2;
+      var sizeOfD  = deployed.length / 2;
+      console.log("size of bytecode in bytes = ", sizeOfB);
+      console.log("size of deployed in bytes = ", sizeOfD);
+      console.log("initialisation and constructor code in bytes = ", sizeOfB - sizeOfD);
+    });
+  });
+
   let game;
   describe('pot, pot withdrawal and round functions by owner', function () {
     it('instantiate a new contract', async function () {
@@ -315,7 +327,7 @@ contract('MoraspaceDefense', function (
     });
   });
 
-  describe('let the game begin', function () {
+  describe('let the game begin: test round 1', function () {
     it('instantiate a new contract', async function () {
       game = await MoraspaceDefense.new({from: owner});
       await web3.eth.sendTransaction({from: owner, to: game.address, value: 100 });
@@ -330,7 +342,7 @@ contract('MoraspaceDefense', function (
       await assertRevert(game.start(60, {from: stranger}), "only by owner");
       const {logs} = await game.start(60, {from: owner});
       const blockTime = web3.eth.getBlock(logs[0].blockNumber).timestamp;
-      console.log(blockTime);
+      //console.log(blockTime);
       expectEvent.inLogs(logs, 'roundStart', {
         _rounds: 1,
         _started: blockTime,
@@ -341,22 +353,49 @@ contract('MoraspaceDefense', function (
       assert(!round[0]);
     });
     it('forbids inappropriate rocket launches', async function () {
-      // await assertRevert(game.launchRocket(2, 1, 1, 0, {from: player1, value: 29e+14})); //underpaid
-      // await assertRevert(game.launchRocket(2, 10, 5, 0, {from: player1, value: 3e+15})); //launchpad overload
+      await assertRevert(game.launchRocket(2, 1, 1, 0, {from: player1, value: 29e+14})); //underpaid
+      await assertRevert(game.launchRocket(2, 10, 5, 0, {from: player1, value: 3e+15})); //launchpad overload
     });
-    it('rocket launches', async function () {
+    it('rocket 1 launches', async function () {
       const round1 = await game.round(1, {from: stranger});
-      const r1 = await game.launchRocket(1, 1, 1, 0, {from: player2, value: 1e+15});
-      //const blockTime = web3.eth.getBlock(logs[0].blockNumber).timestamp;
-      //console.log(round1[3].toNumber());
-      //console.log(r1.logs);
-      //console.log(blockTime);
-      expectEvent.inLogs(r1.logs, 'rocketLaunch', {
+      // console.log(round1[3].toNumber());
+      let result = await game.launchRocket(1, 1, 1, 0, {from: player2, value: 1e+15});
+      expectEvent.inLogs(result.logs, 'rocketLaunch', {
         _hits: 1,
         _mayImpactAt: round1[3].toNumber() + 30,
       });
-      //const {log2} = await game.launchRocket(3, 100, 2, 0, {from: player3, value: 5e+17});
-      //console.log(log2);
+      let mertis2 = await game.getPlayerMerits(player2, 0, {from: player2});
+      //console.log(mertis2);
+      mertis2[0].should.be.bignumber.equal(1);
+      //await assertRevert(game.launchRocket(1, 10, 2, 2, {from: player2, value: 2e+15})); //user id mismatch
+      result = await game.launchRocket(1, 10, 2, 1, {from: player2, value: 2e+15});
+      expectEvent.inLogs(result.logs, 'rocketLaunch', {
+        _hits: 10,
+        _mayImpactAt: round1[3].toNumber() + 330,
+      });
+      mertis2 = await game.getPlayerMerits(player2, 1, {from: player2});
+      //console.log(mertis2);
+      mertis2[1].should.be.bignumber.equal(10);
+    });
+    it('rocket 2 launches', async function () {
+      result = await game.launchRocket(3, 100, 2, 0, {from: player3, value: 5e+17});
+      var hits = result.logs[0].args._hits.toNumber();
+      //console.log(hits);
+      assert(hits > 40 && hits < 60, "success rate should be +/- 10%");
+
+      const mertis3 = await game.getPlayerMerits(player3, 0, {from: stranger});
+      //console.log(mertis2);
+      mertis3[1].should.be.bignumber.equal(hits * 12);
+
+      //const blockTime = web3.eth.getBlock(logs[0].blockNumber).timestamp;
+      //console.log(r1.logs);
+      //console.log(blockTime);
+
+      // for (i = 0; i < 10; ++i) {
+      //   result = await game.launchRocket(3, 100, 2, 0, {from: player3, value: 5e+17});
+      //   console.log(result.logs[0].args._hits.toNumber());
+      // }
+
     });
   });
 

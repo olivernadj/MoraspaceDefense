@@ -107,15 +107,17 @@ contract MoraspaceDefense is Owned {
     launchpads          = 4;
     discount[1]         = DataSets.Discount(true, 604800, 0, 800000000000000, 0);
     discounts           = 1;
-    rocketClass[1]      = DataSets.Rocket(100, 1, 30, 1000000000000000, 0, 1);
-    rocketClass[2]      = DataSets.Rocket(75, 5, 60, 3000000000000000, 0, 0);
-    rocketClass[3]      = DataSets.Rocket(50, 12, 120, 5000000000000000, 0, 0);
+    rocketClass[1]      = DataSets.Rocket(100,  1,  30, 1000000000000000, 0, 1);
+    rocketClass[2]      = DataSets.Rocket( 75,  5,  60, 3000000000000000, 0, 0);
+    rocketClass[3]      = DataSets.Rocket( 50, 12, 120, 5000000000000000, 0, 0);
     rocketClasses       = 3;
     prizeDist.hero      = 50;
     prizeDist.bounty    = 24;
     prizeDist.next      = 11;
     prizeDist.partners  = 10;
     prizeDist.moraspace = 5;
+    player[0]           = DataSets.Player(0, address(0), new uint256[](0), 0, 0);
+    playerDict.push(address(0));
   }
 
   /**
@@ -231,7 +233,7 @@ contract MoraspaceDefense is Owned {
       "O.o The sum of pie char should be around 100!");
     require(rocketClasses > 0, "No rockets in the game!");
     require(_duration > 59, "Round duration must be at least 1 minute!");
-    for (uint8 i = 0; i < rocketClasses; ++i) {
+    for (uint8 i = 0; i <= rocketClasses; ++i) {
       rocketSupply[i] = rocketClass[i];
     }
     ++rounds;
@@ -245,7 +247,15 @@ contract MoraspaceDefense is Owned {
     emit roundStart(rounds, round[rounds].started, round[rounds].mayImpactAt);
   }
 
-  function findUserIndex (address _addr, uint256 _index) public view returns (uint256) {
+  function getPlayerMerits(address _addr, uint256 _index) public view returns (uint256[]) {
+    require(address(0) != _addr, "Player not found!");
+    _index = findPlayerIndex(_addr, _index);
+    require(_index > 0, "Player not found!");
+    return player[_index].merit;
+  }
+
+  function findPlayerIndex(address _addr, uint256 _index) public view returns (uint256) {
+    require(address(0) != _addr, "Player not found!");
     require(!(_index > 0 && _addr != playerDict[_index]), "Forbidden!");
     if (_index == 0) {
       for (uint i = 0; i < playerDict.length; i++) {
@@ -258,25 +268,14 @@ contract MoraspaceDefense is Owned {
     return _index;
   }
 
-  function maintainPlayerPrize (address _addr, uint256 _index) internal returns (uint256) {
-    require(_addr == playerDict[_index], "Forbidden!");
-    DataSets.Player storage _p = player[_index];
-    DataSets.Round storage _r = round[_p.round];
-    if (_p.round != rounds) {
-      if (_p.merit[_r.launchpad] > 0) {
-        _p.earnings = _p.merit[_r.launchpad].mul(_r.bounty);
-        _p.updated = now;
-        _p.merit[_r.launchpad] = 0;
-      }
-    }
-    return _index;
-  }
-
-  function maintainPlayer (address _addr, uint256 _index) internal returns (uint256) {
+  function maintainPlayer(address _addr, uint256 _index) internal returns (uint256) {
+    require(address(0) != _addr, "Player not found!");
     require(!(_index > 0 && _addr != playerDict[_index]), "Forbidden!");
     if (_index == 0) {
-      _index = findUserIndex(_addr, _index);
+      _index = findPlayerIndex(_addr, _index);
       if (_index == 0) {
+        DataSets.Player memory _new;
+        player[_index] = _new;
         _index = playerDict.push(_addr) - 1;
       }
     }
@@ -289,8 +288,11 @@ contract MoraspaceDefense is Owned {
         _p.merit.push(0);
       }
     } else if (_p.round != rounds) {
-      // played in previous round therfore must main the prize
-      maintainPlayerPrize(_addr, _index);
+      // played in previous round therfore must maintain the prize
+      DataSets.Round storage _r = round[_p.round];
+      if (_p.merit[_r.launchpad] > 0) {
+        _p.earnings = _p.merit[_r.launchpad].mul(_r.bounty);
+      }
       for (i = 0; i < _p.merit.length; i++) {
         _p.merit[i] = 0;
       }
@@ -304,7 +306,7 @@ contract MoraspaceDefense is Owned {
   }
 
   function consumeDiscount(uint8 _rocket, uint8 _amount) internal returns (uint256) {
-    require(_rocket < rocketClasses, "Undefined rocket!");
+    require(_rocket <= rocketClasses, "Undefined rocket!");
     DataSets.Rocket storage _r = rocketSupply[_rocket];
     uint256 _cost = _r.cost;
     if (_r.discount > 0) { //check if already expired
@@ -332,8 +334,8 @@ contract MoraspaceDefense is Owned {
   /**
    * @dev uses the previous blockhash for random generation
    */
-  function getRandom(uint8 _maxRan) public view returns(uint8) {
-      uint256 _genNum = uint256(keccak256(abi.encodePacked(blockhash(block.number-1))));
+  function getRandom(uint8 _maxRan, uint256 _salt) public view returns(uint8) {
+      uint256 _genNum = uint256(keccak256(abi.encodePacked(blockhash(block.number-1), _salt)));
       return uint8(_genNum % _maxRan);
   }
 
@@ -360,7 +362,7 @@ contract MoraspaceDefense is Owned {
     DataSets.Round storage _rd     = round[rounds];
     pot = pot.add(_totalCost);
     for (uint8 i = 0; i < _amount; ++i)
-      if (getRandom(100) < _rt.accuracy)
+      if (getRandom(100, now + i) < _rt.accuracy)
         ++_hits;
     if (_hits > 0) {
       uint256 _m;
@@ -393,8 +395,8 @@ contract MoraspaceDefense is Owned {
     hero[rounds].addr            = _rd.hero;
     _rd.jackpot                  = pot.div(100).mul(prizeDist.hero);
     _rd.bounty                   = pot.div(_rd.merit[_rd.launchpad].sub(_pr.merit[_rd.launchpad]));
-    _rd.merit[_rd.launchpad]     = _rd.merit[_rd.launchpad].sub(_pr.merit[_rd.launchpad]);
-    _pr.merit[_rd.launchpad]     = 0;
+    _rd.merit[_rd.launchpad-1]   = _rd.merit[_rd.launchpad].sub(_pr.merit[_rd.launchpad]);
+    _pr.merit[_rd.launchpad-1]   = 0;
     _pr.earnings                 = _rd.jackpot;
     pot                          = pot.sub(_rd.jackpot).sub(_rd.merit[_rd.launchpad].mul(_rd.bounty));
     _rd.over                     = true;
@@ -415,5 +417,6 @@ contract MoraspaceDefense is Owned {
     require(10000000000000000 == msg.value, "The payment must be 0.01ETH!");
     pot              += 10000000000000000; // temporary goes to pot
     hero[_round].name = _name.nameFilter();
+    // hero[_round].name = _name;
   }
 }
