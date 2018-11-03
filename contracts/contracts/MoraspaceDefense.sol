@@ -101,22 +101,22 @@ contract MoraspaceDefense is Owned {
   constructor() public {
     round[0].over       = true;
     rounds              = 0;
-    launchpad[1]        = DataSets.Launchpad(100);
-    launchpad[2]        = DataSets.Launchpad(100);
-    launchpad[3]        = DataSets.Launchpad(100);
-    launchpad[4]        = DataSets.Launchpad(100);
-    launchpads          = 4;
-    discount[1]         = DataSets.Discount(true, 604800, 0, 800000000000000, 0);
-    discounts           = 1;
-    rocketClass[1]      = DataSets.Rocket(100,  1,  30, 1000000000000000, 0, 1);
-    rocketClass[2]      = DataSets.Rocket( 75,  5,  60, 3000000000000000, 0, 0);
-    rocketClass[3]      = DataSets.Rocket( 50, 12, 120, 5000000000000000, 0, 0);
-    rocketClasses       = 3;
-    prizeDist.hero      = 50;
-    prizeDist.bounty    = 24;
-    prizeDist.next      = 11;
-    prizeDist.partners  = 10;
-    prizeDist.moraspace = 5;
+//    launchpad[1]        = DataSets.Launchpad(100);
+//    launchpad[2]        = DataSets.Launchpad(100);
+//    launchpad[3]        = DataSets.Launchpad(100);
+//    launchpad[4]        = DataSets.Launchpad(100);
+//    launchpads          = 4;
+//    discount[1]         = DataSets.Discount(true, 604800, 0, 800000000000000, 0);
+//    discounts           = 1;
+//    rocketClass[1]      = DataSets.Rocket(100,  1,  30, 1000000000000000, 0, 1);
+//    rocketClass[2]      = DataSets.Rocket( 75,  5,  60, 3000000000000000, 0, 0);
+//    rocketClass[3]      = DataSets.Rocket( 50, 12, 120, 5000000000000000, 0, 0);
+//    rocketClasses       = 3;
+//    prizeDist.hero      = 50;
+//    prizeDist.bounty    = 24;
+//    prizeDist.next      = 11;
+//    prizeDist.partners  = 10;
+//    prizeDist.moraspace = 5;
     player[0]           = DataSets.Player(0, address(0), new uint32[](0), 0, 0);
     playerDict.push(address(0));
   }

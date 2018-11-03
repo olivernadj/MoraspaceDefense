@@ -1,0 +1,30 @@
+{
+  "name": "moraspace_defense",
+  "version": "1.0.0",
+  "description": "Space defense game on Smart Contract",
+  "main": "truffle.js",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "truffle": "^4.1.14",
+    "chai": "^4.2.0",
+    "chai-bignumber": "^2.0.2",
+    "dotenv": "^6.1.0",
+    "truffle-hdwallet-provider": "^0.0.6"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/duyanhvu1987/moraspace.git"
+  },
+  "author": "mr.oliver.nadj@gmail.com",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/duyanhvu1987/moraspace/issues"
+  },
+  "homepage": "https://github.com/duyanhvu1987/moraspace#readme"
+}
