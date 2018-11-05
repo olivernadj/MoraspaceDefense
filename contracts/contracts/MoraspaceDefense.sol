@@ -84,7 +84,7 @@ contract MoraspaceDefense is Owned {
   }
 
   /**
-   * @dev prevents contracts from interacting with fomo3d
+   * @dev prevents contracts from interacting with
    */
   modifier isHuman(address _addr) {
     uint256 _codeSize;
@@ -101,6 +101,8 @@ contract MoraspaceDefense is Owned {
   constructor() public {
     round[0].over       = true;
     rounds              = 0;
+// these settings can be done by additional transactions
+// truffle develop can't migrate / test with heavy constructor
 //    launchpad[1]        = DataSets.Launchpad(100);
 //    launchpad[2]        = DataSets.Launchpad(100);
 //    launchpad[3]        = DataSets.Launchpad(100);
@@ -117,7 +119,7 @@ contract MoraspaceDefense is Owned {
 //    prizeDist.next      = 11;
 //    prizeDist.partners  = 10;
 //    prizeDist.moraspace = 5;
-    player[0]           = DataSets.Player(0, address(0), new uint32[](0), 0, 0);
+//    player[0]           = DataSets.Player(0, address(0), new uint32[](0), 0, 0);
     playerDict.push(address(0));
   }
 
@@ -186,7 +188,7 @@ contract MoraspaceDefense is Owned {
   }
 
   /**
-   * @dev sets the pie cheart distribution for the prize
+   * @dev sets the pie chart distribution for the prize
    * - the partners and moraspace share is not implemented, all stays in the pod,
    *   what can be manually withdraw with potWithdrawTo()
    */
@@ -289,7 +291,7 @@ contract MoraspaceDefense is Owned {
         _p.merit.push(0);
       }
     } else if (_p.round != rounds) {
-      // played in previous round therfore must maintain the prize
+      // played in previous round therefore must maintain the prize
       DataSets.Round storage _r = round[_p.round];
       if (_p.merit[_r.launchpad] > 0) {
         _p.earnings = _p.merit[_r.launchpad].mul(_r.bounty);
@@ -333,7 +335,7 @@ contract MoraspaceDefense is Owned {
   }
 
   /**
-   * @dev uses the previous blockhash for random generation
+   * @dev uses the previous block hash for random generation
    */
   function getRandom(uint8 _maxRan, uint256 _salt) public view returns(uint8) {
       uint256 _genNum = uint256(keccak256(abi.encodePacked(blockhash(block.number-1), _salt)));
@@ -342,18 +344,18 @@ contract MoraspaceDefense is Owned {
 
   /**
     * @dev launches Rockets
-    * -price and discount for n+1 rocket is same as for 1st rocket, regardles of limited discount or price tier.
+    * -price and discount for n+1 rocket is same as for 1st rocket, regardless of limited discount or price tier.
     */
   function launchRocket (
     uint8 _rocket,
     uint8 _amount,
     uint8 _launchpad,
     uint256 _player // performance improvement. Let web3 find the user index
-  ) external payable onlyLiveRound() returns(uint8 _hits) {
+  ) external payable onlyLiveRound() isHuman(msg.sender) returns(uint8 _hits) {
     require(round[rounds].mayImpactAt > now, "Sorry it is too late!");
     require(_launchpad > 0 && _launchpad <= launchpads, "Undefined launchpad!");
     require(_amount > 0 && _amount <= launchpad[_launchpad].size,
-      "Rockets need to be more than one and maximam as mach as the launchpad can handle");
+      "Rockets need to be more than one and maximum as much as the launchpad can handle");
     uint256 _totalCost = consumeDiscount(_rocket, _amount);
     require(_totalCost <= msg.value, "Insufficient found!");
     DataSets.Rocket storage _rt    = rocketSupply[_rocket];

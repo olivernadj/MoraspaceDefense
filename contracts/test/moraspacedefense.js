@@ -23,9 +23,9 @@ contract('MoraspaceDefense', function (
       var deployed = instance.constructor._json.deployedBytecode;
       var sizeOfB  = bytecode.length / 2;
       var sizeOfD  = deployed.length / 2;
-      console.log("size of bytecode in bytes = ", sizeOfB);
+      console.log("size of byte-code in bytes = ", sizeOfB);
       console.log("size of deployed in bytes = ", sizeOfD);
-      console.log("initialisation and constructor code in bytes = ", sizeOfB - sizeOfD);
+      console.log("initialization and constructor code in bytes = ", sizeOfB - sizeOfD);
     });
   });
 
@@ -52,13 +52,13 @@ contract('MoraspaceDefense', function (
       it('pot must match with initial transfer', async function () {
         (await game.pot()).should.be.bignumber.equal(100);
       });
-      it('pot overwithdraws must not allowed', async function () {
+      it('pot over-withdraws must not allowed', async function () {
         await assertRevert(game.potWithdrawTo(124, owner, {from: owner}));
       });
       it('pot withdraws must not allowed from non owner address', async function () {
         await assertRevert(game.potWithdrawTo(100, owner, {from: stranger}));
       });
-      it('pot must be withdrawable by owner', async function () {
+      it('pot must be able to withdraw by owner', async function () {
         const {logs} = await game.potWithdrawTo(100, stranger, {from: owner});
         expectEvent.inLogs(logs, 'potWithdraw', {
           _eth: 100,
@@ -198,7 +198,7 @@ contract('MoraspaceDefense', function (
         let rocket1 = await game.rocketClass(1);
         rocket1[0].should.be.bignumber.equal(100, "rocket 1 must has 100 accuracy");
         rocket1[1].should.be.bignumber.equal(1, "rocket 1 must has 1 merit");
-        rocket1[2].should.be.bignumber.equal(30, "rocket 1 must has 30 knockback");
+        rocket1[2].should.be.bignumber.equal(30, "rocket 1 must has 30 knock-back");
         rocket1[3].should.be.bignumber.equal(1e+15, "rocket 1 must has 1e+15 cost");
         rocket1[5].should.be.bignumber.equal(1, "rocket 1 must linked to discount #1");
         let rocket2 = await game.rocketClass(2);
@@ -225,7 +225,7 @@ contract('MoraspaceDefense', function (
         let rocket1 = await game.rocketClass(1);
         rocket1[0].should.be.bignumber.equal(90, "rocket 1 must has 90 accuracy");
         rocket1[1].should.be.bignumber.equal(2, "rocket 1 must has 2 merit");
-        rocket1[2].should.be.bignumber.equal(35, "rocket 1 must has 35 knockback");
+        rocket1[2].should.be.bignumber.equal(35, "rocket 1 must has 35 knock-back");
         rocket1[3].should.be.bignumber.equal(1e+15, "rocket 1 must has 1e+15 cost");
         rocket1[5].should.be.bignumber.equal(0, "rocket 1 must not linked to discounts");
         game.adjustRocket(4, 0, 0, 0, 0, 0, {from: owner}); //remove newly added rocket
@@ -305,8 +305,8 @@ contract('MoraspaceDefense', function (
         game.prepareDiscount(1, true, 3600, 1111, 5e+14, 2, {from: owner}); //"modify a discount
         let discount1 = await game.discount(1);
         assert(discount1[0], "discount 1 must be enabled");
-        discount1[1].should.be.bignumber.equal(3600, "discount 1 must has 7 days expiracy");
-        discount1[2].should.be.bignumber.equal(1111, "discount 1 must has 1111 quanity");
+        discount1[1].should.be.bignumber.equal(3600, "discount 1 must has 7 days expire");
+        discount1[2].should.be.bignumber.equal(1111, "discount 1 must has 1111 quantity");
         discount1[3].should.be.bignumber.equal(5e+14, "discount 1 must has 5e+14 price");
         discount1[4].should.be.bignumber.equal(2, "discount 1 must linked to discount #2");
         game.prepareDiscount(2, false, 0, 0, 0, 0, {from: owner}); //remove newly added discount
@@ -376,7 +376,7 @@ contract('MoraspaceDefense', function (
         game.updatePrizeDist(90, 4, 3, 2, 1, {from: owner});
         let prizeDist = await game.prizeDist();
         prizeDist[0].should.be.bignumber.equal(90, "hero share must be 50% !");
-        prizeDist[1].should.be.bignumber.equal(4, "bounty puul must be 24% !");
+        prizeDist[1].should.be.bignumber.equal(4, "bounty pool must be 24% !");
         prizeDist[2].should.be.bignumber.equal(3, "next round funding must be 11% !");
         prizeDist[3].should.be.bignumber.equal(2, "affiliate fee to partner must be 10% !");
         prizeDist[4].should.be.bignumber.equal(1, "owner share must be 5% !");
@@ -421,11 +421,84 @@ contract('MoraspaceDefense', function (
       });
     });
     describe('model test scenarios', function () {
-      it('customize the game for all features testing', async function () {
+      it('customize the game for revert testing', async function () {
+        game.prepareLaunchpad(5, 5, {from: owner});
+      });
+      it('start the round', async function () {
+        await assertRevert(game.start(60, {from: stranger}), "only by owner");
+        const {logs} = await game.start(60, {from: owner});
+        const blockTime = web3.eth.getBlock(logs[0].blockNumber).timestamp;
+        //console.log(blockTime);
+        expectEvent.inLogs(logs, 'roundStart', {
+          _rounds: 1,
+          _started: blockTime,
+          _mayImpactAt: blockTime + 60,
+        });
+        (await game.rounds()).should.be.bignumber.equal(1);
+        let round = await game.round(1);
+        assert(!round[0]);
+      });
+      it('forbids inappropriate rocket launches', async function () {
+        await assertRevert(game.launchRocket(2, 1, 1, 0, {from: player1, value: 29e+14})); //underpaid
+        //await assertRevert(game.launchRocket(2, 10, 5, 0, {from: player1, value: 3e+16})); //launchpad overload
+        await assertRevert(game.launchRocket(1, 1, 1, 1, {from: player2, value: 1e+15})); //invalid user id
+      });
+      it('rocket 1 launches', async function () {
+        const round1 = await game.round(1, {from: stranger});
+        //console.log(round1[3].toNumber());
+        await game.launchRocket(1, 1, 1, 0, {from: player2, value: 1e+15});
+        let result = await game.launchRocket(1, 1, 1, 1, {from: player2, value: 1e+15});
+        expectEvent.inLogs(result.logs, 'rocketLaunch', {
+          _hits: 1,
+          _mayImpactAt: round1[3].toNumber() + 60,
+        });
+        result = await game.launchRocket(1, 10, 2, 0, {from: player4, value: 1e+16});
+        expectEvent.inLogs(result.logs, 'rocketLaunch', {
+          _hits: 10,
+          _mayImpactAt: round1[3].toNumber() + 360,
+        });
+      });
+      it('check merits (affected by rocket 1 launches)', async function () {
+        let mertis2 = await game.getPlayerMerits(player2, 0, {from: stranger});
+        mertis2[0].should.be.bignumber.equal(2);
+        let mertis4 = await game.getPlayerMerits(player4, 2, {from: stranger});
+        mertis4[1].should.be.bignumber.equal(10);
+        (await game.merit(0, {from: stranger})).should.be.bignumber.equal(2);
+        (await game.merit(1, {from: stranger})).should.be.bignumber.equal(10);
+      });
+      it('rocket 2 launches (allowed to fail sometimes)', async function () {
+        result = await game.launchRocket(3, 100, 2, 0, {from: player3, value: 5e+17});
+        var hits = result.logs[0].args._hits.toNumber();
+        assert(hits > 40 && hits < 60, "success rate should be +/- 10%");
+        const mertis3 = await game.getPlayerMerits(player3, 0, {from: stranger});
+        mertis3[1].should.be.bignumber.equal(hits * 12);
+      });
+    });
+  });
+
+  describe('let the game begin: test round 2', function () {
+    describe('instantiate a new contract, with settings', function () {
+      it('instantiate a new contract', async function () {
+        game = await MoraspaceDefense.new({from: owner});
+        await web3.eth.sendTransaction({from: owner, to: game.address, value: 100 });
+      });
+      it('apply settings for model testing', async function() {
+        game.prepareLaunchpad(1, 100, {from: owner});
+        game.prepareLaunchpad(2, 100, {from: owner});
+        game.prepareLaunchpad(3, 100, {from: owner});
+        game.prepareLaunchpad(4, 100, {from: owner});
+        game.prepareDiscount(1, true, 604800, 0, 8e+14, 0, {from: owner});
+        game.adjustRocket(1, 100, 1, 30, 1e+15, 1, {from: owner});
+        game.adjustRocket(2, 75, 5, 60, 3e+15, 0, {from: owner});
+        game.adjustRocket(3, 50, 12, 120, 5e+15, 0, {from: owner});
+        game.updatePrizeDist(50, 24, 11, 10, 5, {from: owner});
+      });
+    });
+    describe('model test scenarios', function () {
+      it('customize the game for discount testing', async function () {
         game.prepareDiscount(2, true, 0, 15, 3e+14, 0, {from: owner});
         game.prepareDiscount(3, true, 45, 0, 2e+14, 2, {from: owner});
         game.prepareDiscount(1, true, 30, 10, 1e+14, 3, {from: owner});
-        game.prepareLaunchpad(4, 5, {from: owner});
       });
       it('start the round', async function () {
         await assertRevert(game.start(60, {from: stranger}), "only by owner");
@@ -466,10 +539,10 @@ contract('MoraspaceDefense', function (
         mertis2[0].should.be.bignumber.equal(2);
         let mertis4 = await game.getPlayerMerits(player4, 2, {from: stranger});
         mertis4[1].should.be.bignumber.equal(10);
-        // let merit0 = await game.merit(0, {from: stranger});
-        // console.log(merit0);
+        (await game.merit(0, {from: stranger})).should.be.bignumber.equal(2);
+        (await game.merit(1, {from: stranger})).should.be.bignumber.equal(10);
       });
-      it('rocket 2 launches', async function () {
+      it('rocket 2 launches (allowed to fail sometimes)', async function () {
         result = await game.launchRocket(3, 100, 2, 0, {from: player3, value: 5e+17});
         var hits = result.logs[0].args._hits.toNumber();
         assert(hits > 40 && hits < 60, "success rate should be +/- 10%");
